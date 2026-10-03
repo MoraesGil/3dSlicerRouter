@@ -109,7 +109,7 @@ final class RouterTests: XCTestCase {
         let url = Self.samples.appendingPathComponent("bambu-h2d-four-plates.3mf")
         let scene = try PrintScene.load(url: url, info: ThreeMF.info(url: url))
         XCTAssertEqual(scene.beds.count, 4)
-        XCTAssertEqual(Set(scene.meshes.keys), ["#7B5CFF", "#F2F2F2"])
+        XCTAssertEqual(Set(scene.meshes.keys), ["#2F6FED", "#F2F2F2"])
         XCTAssertGreaterThan(scene.triangleCount, 1000)
     }
 

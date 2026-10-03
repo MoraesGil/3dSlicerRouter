@@ -161,7 +161,7 @@ def main():
         ox, oy = plate_offset(p, len(shapes), w, d)
         plates.append({"name": label, "mesh": mesh, "x": ox + w / 2, "y": oy + d / 2, "extruder": p % 2 + 1, "plate": p + 1})
     write("bambu-h2d-four-plates.3mf", printer="Bambu Lab H2D", bed=(w, d),
-          colours=("#7B5CFF", "#F2F2F2"), preset="0.20mm Standard @BBL H2D", plates=4, objects=plates)
+          colours=("#2F6FED", "#F2F2F2"), preset="0.20mm Standard @BBL H2D", plates=4, objects=plates)
 
     write("unknown-printer-prusa-mk4s.3mf", printer="Original Prusa MK4S", bed=(250, 210),
           colours=("#FF7A00",), preset="0.20mm SPEED @MK4S",

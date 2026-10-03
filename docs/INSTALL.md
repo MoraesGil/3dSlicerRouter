@@ -8,7 +8,7 @@
 |---|---|---|
 | **Runtime** | macOS 14 Sonoma or newer (Apple silicon or Intel) | running the app |
 | | [Bambu Studio](https://bambulab.com/en/download/studio) and/or [Snapmaker Orca](https://www.snapmaker.com/) in `/Applications` | the slicers it routes to |
-| | *(optional)* a local [LAYA classifier](../README.md#optional-laya-classifier) | files that declare no printer |
+| | *(optional)* a local [LAYA classifier](../README.md#files-with-no-printer-optional) | files that declare no printer |
 | **Build** | Xcode 15 or newer (Command Line Tools alone are not enough) | compiling |
 | | [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen` | generating the Xcode project |
 | *Optional* | [duti](https://github.com/moretension/duti): `brew install duti` | switching default apps from the terminal |

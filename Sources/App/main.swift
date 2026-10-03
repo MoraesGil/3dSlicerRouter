@@ -4,6 +4,8 @@ import AppKit
 //   3dSlicerRouter --inspect arq.3mf…      decisão que seria tomada (não grava nada)
 //   3dSlicerRouter --render arq.3mf out.png [px]
 //   3dSlicerRouter --forget arq.3mf…       apaga a memória do arquivo
+//   3dSlicerRouter --map "<printer_model>" /Applications/App.app   impressora → qualquer fatiador
+//   3dSlicerRouter --mappings              lista os mapeamentos
 //   3dSlicerRouter --set-default           torna o router o app padrão de .3mf
 let args = Array(CommandLine.arguments.dropFirst())
 
@@ -53,6 +55,17 @@ case "--render":
     } catch {
         print("erro \(error)"); exit(1)
     }
+case "--map":
+    guard args.count == 3 else { print("uso: --map \"<printer_model>\" /Applications/Slicer.app"); exit(2) }
+    let appURL = URL(fileURLWithPath: args[2])
+    guard let bundle = Bundle(url: appURL) else { print("não é um app: \(args[2])"); exit(1) }
+    let name = (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String) ?? appURL.deletingPathExtension().lastPathComponent
+    Store().remember(printer: args[1], app: SlicerApp(bundleID: bundle.bundleIdentifier ?? "", path: appURL.path, name: name))
+    print("\(args[1]) → \(name)")
+case "--mappings":
+    let m = Store().mappings()
+    for (brand, app) in m.byBrand.sorted(by: { $0.key < $1.key }) { print("\(brand) …  → \(app.name)  (padrão)") }
+    for (model, app) in m.byModel.sorted(by: { $0.key < $1.key }) { print("\(model)  → \(app.name)") }
 case "--version":
     print(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev")
 case "--forget":

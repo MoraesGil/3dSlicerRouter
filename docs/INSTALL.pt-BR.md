@@ -8,7 +8,7 @@
 |---|---|---|
 | **Para rodar** | macOS 14 Sonoma ou mais novo (Apple silicon ou Intel) | executar o app |
 | | [Bambu Studio](https://bambulab.com/en/download/studio) e/ou [Snapmaker Orca](https://www.snapmaker.com/) em `/Applications` | os fatiadores de destino |
-| | *(opcional)* um [classificador LAYA](../README.pt-BR.md#opcional-classificador-laya) local | arquivos sem impressora declarada |
+| | *(opcional)* um [classificador LAYA](../README.pt-BR.md#arquivos-sem-impressora-opcional) local | arquivos sem impressora declarada |
 | **Para compilar** | Xcode 15 ou mais novo (só o Command Line Tools não basta) | compilar |
 | | [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen` | gerar o projeto Xcode |
 | *Opcional* | [duti](https://github.com/moretension/duti): `brew install duti` | trocar o app padrão pelo terminal |
