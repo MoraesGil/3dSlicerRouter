@@ -1,0 +1,6 @@
+build/
+*.xcodeproj/
+DerivedData/
+.temp/
+.claude/
+.DS_Store
