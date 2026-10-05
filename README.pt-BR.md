@@ -50,6 +50,21 @@ para mapear pelo terminal:
 Precisa do outro fatiador para um arquivo? **Segure ⌥ (Option) ao abrir** e escolha. O *Abrir com*
 do Finder continua funcionando, e o próximo duplo clique lê o arquivo de novo.
 
+## Já está aberto? Nada de segunda janela
+
+O Bambu Studio e o Snapmaker Orca abrem **outra instância** quando você abre um projeto que já está
+aberto, e você acaba editando o mesmo arquivo em duas janelas. O 3dSlicerRouter confere antes. Se o
+arquivo é o projeto aberto de um fatiador em execução, ele avisa, diz se há alterações não salvas e
+oferece:
+
+- **Ir para o fatiador**: traz exatamente aquela janela para a frente.
+- **Recarregar do disco**: fecha esse projeto do jeito normal (o fatiador pergunta antes de descartar
+  alterações) e reabre o arquivo salvo.
+- **Abrir outra cópia**: o comportamento antigo, se você quiser mesmo.
+
+Ele lê as pastas de recuperação que os fatiadores mantêm em `$TMPDIR` enquanto o projeto está
+aberto, então não precisa de permissão extra. `3dSlicerRouter --inspect arq.3mf` mostra o mesmo.
+
 ## Veja para onde o arquivo vai antes de abrir
 
 O router também ensina o Finder a mostrar projetos 3MF:
@@ -76,9 +91,12 @@ O router também ensina o Finder a mostrar projetos 3MF:
 | Impressora mudou para outra marca (A1 → U1) | Pergunta, com o fatiador mapeado em primeiro |
 | Arquivo sem impressora | Classificador local opcional; senão, pergunta |
 | ⌥ segurado ao abrir | Sempre pergunta |
+| Arquivo já aberto num fatiador | Ir para ele, recarregar do disco ou abrir outra cópia |
 
-A decisão fica no próprio arquivo, como atributo estendido (`com.moraesdev.slicer-router`), e num
-índice SQLite local. **O conteúdo do arquivo nunca é alterado.**
+A decisão fica num índice SQLite local e no arquivo, como atributo estendido
+(`com.moraesdev.slicer-router`). Os fatiadores substituem o arquivo ao salvar, o que apaga o atributo;
+o router então acha a decisão pelo caminho e grava de novo. **O router nunca altera o conteúdo do
+arquivo.**
 
 > Por que não o campo `Application`? O Snapmaker Orca também grava `BambuStudio-…` nele. A impressora
 > vem de `Metadata/project_settings.config` → `printer_model`.
@@ -137,8 +155,11 @@ defaults write com.moraesdev.3dslicerrouter LayaEndpoint off    # ou outra URL
 
 ## Perguntas frequentes
 
-**Ele mexe nos meus arquivos?** Só em atributos estendidos (a decisão e metadados do Finder). O
-conteúdo do 3MF continua idêntico, byte a byte.
+**Ele mexe nos meus arquivos?** Só num atributo estendido com a decisão. O conteúdo do 3MF continua
+idêntico, byte a byte.
+
+**O preview atualiza depois que edito o projeto?** Sim. O Finder guarda as thumbnails pela data de
+modificação, então o próximo salvamento no fatiador atualiza o preview. Fechar sem salvar não muda nada.
 
 **Precisa de permissão especial?** Não. Nada de Acessibilidade, Gravação de Tela ou Acesso Total ao
 Disco. O macOS entrega a ele só o arquivo que você abriu.

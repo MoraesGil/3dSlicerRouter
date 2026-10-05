@@ -112,4 +112,13 @@ public enum Router {
         if let mapped { return .open(mapped, reason: "regra \(info.brand ?? model)") }
         return .ask(.unknownPrinter(model), suggested: nil)
     }
+
+    /// App que o próximo duplo clique deve abrir, sem perguntar nada (ícone do Finder).
+    public static func expectedApp(info: ThreeMFInfo, record: FileRecord?, mappings: Mappings) -> SlicerApp? {
+        switch decide(info: info, record: record, mappings: mappings, optionHeld: false) {
+        case let .open(app, _): return app
+        case let .ask(_, suggested): return suggested ?? record?.app
+        case .classify: return record?.app
+        }
+    }
 }

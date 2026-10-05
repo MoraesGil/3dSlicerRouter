@@ -38,6 +38,7 @@ case "--inspect":
               record:        \(record.map { "\($0.uuid) \($0.printerModel ?? "-") → \($0.app.name)" } ?? "-")
               decision:      \(describe(decision))
               laya:          \(laya) (abre direto a partir de \(Int(Laya.minProbability * 100))%)
+              aberto agora:  \(OpenProjects.find(url, running: RouterApp.process(pid:)).map { "\($0.bundleID) pid \($0.pid)\($0.dirty ? " (alterações não salvas)" : "")" } ?? "não")
             """)
         } catch {
             print("\(path): erro \(error)")

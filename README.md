@@ -50,6 +50,21 @@ You can also map printers from the terminal:
 Need the other slicer for one file? **Hold ⌥ (Option) while opening** and pick. Finder's
 *Open With* keeps working too, and the next double-click reads the file again.
 
+## Already open? No second window
+
+Bambu Studio and Snapmaker Orca start a **new instance** when you open a project that is already
+open, so you end up editing the same file in two windows. 3dSlicerRouter checks first. When the file
+is the open project of a running slicer, it tells you so, says whether it has unsaved changes, and
+offers:
+
+- **Switch to the slicer**: brings that exact window forward.
+- **Reload from disk**: closes that project the normal way (the slicer asks before discarding
+  unsaved changes) and reopens the saved file.
+- **Open another copy**: the old behaviour, if you really want it.
+
+It reads the recovery folders the slicers keep in `$TMPDIR` while a project is open, so it needs no
+extra permissions. `3dSlicerRouter --inspect file.3mf` shows the same information.
+
 ## See where a file goes before you open it
 
 The router also teaches Finder about 3MF projects:
@@ -76,9 +91,12 @@ The router also teaches Finder about 3MF projects:
 | Printer changed to another brand (A1 → U1) | Asks, with the mapped slicer first |
 | No printer in the file | Optional local classifier, otherwise asks |
 | ⌥ held while opening | Always asks |
+| File already open in a slicer | Switch to it, reload from disk or open another copy |
 
-The decision is stored on the file itself as an extended attribute (`com.moraesdev.slicer-router`)
-and in a local SQLite index. **The file's contents are never modified.**
+The decision is stored in a local SQLite index and on the file as an extended attribute
+(`com.moraesdev.slicer-router`). Slicers replace the file when they save, which drops the attribute;
+the router then finds the decision by path and stamps it again. **The file's contents are never
+modified by the router.**
 
 > Why not the `Application` field? Snapmaker Orca also writes `BambuStudio-…` there. The printer comes
 > from `Metadata/project_settings.config` → `printer_model`.
@@ -136,8 +154,11 @@ defaults write com.moraesdev.3dslicerrouter LayaEndpoint off    # or another URL
 
 ## FAQ
 
-**Does it touch my files?** Only extended attributes (the decision and Finder metadata). The 3MF
-contents stay byte-for-byte the same.
+**Does it touch my files?** Only an extended attribute with the decision. The 3MF contents stay
+byte-for-byte the same.
+
+**Does the preview update after I edit the project?** Yes. Finder caches thumbnails by modification
+date, so the next save in the slicer refreshes the preview. Closing without saving changes nothing.
 
 **Does it need special permissions?** No. No Accessibility, Screen Recording or Full Disk Access.
 macOS hands it only the file you opened.

@@ -41,6 +41,27 @@ enum Prompt {
         return nil
     }
 
+    enum AlreadyOpenChoice { case switchTo, reload, anotherCopy, cancel }
+
+    /// O arquivo já é o projeto aberto numa instância do fatiador.
+    static func alreadyOpen(url: URL, appName: String, appPath: String?, dirty: Bool) -> AlreadyOpenChoice {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = L10n.alreadyOpen(url.lastPathComponent, appName)
+        alert.informativeText = dirty ? L10n.alreadyOpenDirty(appName) : L10n.alreadyOpenClean
+        if let appPath { alert.icon = NSWorkspace.shared.icon(forFile: appPath) }
+        alert.addButton(withTitle: L10n.switchTo(appName))
+        alert.addButton(withTitle: L10n.reloadFromDisk)
+        alert.addButton(withTitle: L10n.openAnotherCopy)
+        alert.addButton(withTitle: L10n.cancel)
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: return .switchTo
+        case .alertSecondButtonReturn: return .reload
+        case .alertThirdButtonReturn: return .anotherCopy
+        default: return .cancel
+        }
+    }
+
     /// Seletor nativo de apps em /Applications.
     static func pickApplication() -> SlicerApp? {
         let panel = NSOpenPanel()

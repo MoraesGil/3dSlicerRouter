@@ -63,6 +63,45 @@ final class RouterTests: XCTestCase {
                        .ask(.manual, suggested: .bambuStudio))
     }
 
+    func testFinderIconFollowsPrinterChange() {
+        let m = Mappings()
+        // Escolha manual vale enquanto a impressora não muda.
+        XCTAssertEqual(Router.expectedApp(info: info("Snapmaker U1"), record: record("Snapmaker U1", .bambuStudio, override: true), mappings: m), .bambuStudio)
+        // Retargeted para A1: o ícone já mostra o Bambu Studio.
+        XCTAssertEqual(Router.expectedApp(info: info("Bambu Lab A1"), record: record("Snapmaker U1", .snapmakerOrca), mappings: m), .bambuStudio)
+        // Mudou para Snapmaker: o router vai perguntar, o ícone mostra a sugestão.
+        XCTAssertEqual(Router.expectedApp(info: info("Snapmaker U1"), record: record("Bambu Lab A1", .bambuStudio), mappings: m), .snapmakerOrca)
+        XCTAssertNil(Router.expectedApp(info: info(nil), record: nil, mappings: m))
+    }
+
+    func testDetectsProjectAlreadyOpenFromSlicerBackup() throws {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("op-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        func session(_ root: String, _ name: String, origin: String, dirty: Bool = false) throws {
+            let dir = tmp.appendingPathComponent("\(root)/Sun_Oct_04/\(name)")
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try origin.write(to: dir.appendingPathComponent("origin.txt"), atomically: true, encoding: .utf8)
+            if dirty { try Data().write(to: dir.appendingPathComponent(".3mf")) }
+        }
+        let file = tmp.appendingPathComponent("work/tray.3mf")
+        try session("bamboo_model", "10_00_00#111#1", origin: file.path, dirty: true)
+        try session("bamboo_model", "09_00_00#222#1", origin: file.path)              // processo morto
+        try session("snapmaker_orca_model", "10_00_00#333#1", origin: "work/tray.3mf") // caminho relativo
+        let alive: [Int32: OpenProjects.Process] = [
+            111: .init(bundleID: "com.bambulab.bambu-studio", launched: nil),
+            333: .init(bundleID: "com.snapmaker.snapmaker-orca", launched: nil),
+        ]
+        let found = OpenProjects.find(file, tmp: tmp) { alive[$0] }
+        XCTAssertNotNil(found)
+        XCTAssertTrue([111, 333].contains(found!.pid))
+        XCTAssertEqual(OpenProjects.find(file, tmp: tmp) { $0 == 111 ? alive[111] : nil },
+                       OpenProject(pid: 111, bundleID: "com.bambulab.bambu-studio", origin: file.path, dirty: true))
+        XCTAssertNil(OpenProjects.find(file, tmp: tmp) { _ in nil })
+        XCTAssertNil(OpenProjects.find(tmp.appendingPathComponent("other.3mf"), tmp: tmp) { alive[$0] })
+        // PID com bundle errado (reciclado por outro app) não conta.
+        XCTAssertNil(OpenProjects.find(file, tmp: tmp) { _ in .init(bundleID: "com.apple.TextEdit", launched: nil) })
+    }
+
     func testBedLayoutMatchesBambuGrid() {
         let beds = PrintScene.bedLayout(count: 4, min: SIMD2(0, 0), max: SIMD2(330, 320))
         XCTAssertEqual(beds.map(\.min), [SIMD2(0, 0), SIMD2(396, 0), SIMD2(0, -384), SIMD2(396, -384)])

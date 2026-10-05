@@ -46,6 +46,23 @@ public enum L10n {
         Current default app for .3mf: \(current)
         """)
     }
+    public static func alreadyOpen(_ file: String, _ app: String) -> String {
+        t("\(file) já está aberto no \(app)", "\(file) is already open in \(app)")
+    }
+    public static func alreadyOpenDirty(_ app: String) -> String {
+        t("Ele tem alterações não salvas. Recarregar fecha esse projeto no \(app), que pergunta antes de descartar, e reabre o arquivo do disco.",
+          "It has unsaved changes. Reload closes that project in \(app), which asks before discarding them, and reopens the file from disk.")
+    }
+    public static var alreadyOpenClean: String {
+        t("Sem alterações não salvas. Abrir de novo criaria uma segunda janela com o mesmo projeto.",
+          "No unsaved changes. Opening it again would start a second window with the same project.")
+    }
+    public static func switchTo(_ app: String) -> String { t("Ir para o \(app)", "Switch to \(app)") }
+    public static var reloadFromDisk: String { t("Recarregar do disco", "Reload from disk") }
+    public static var openAnotherCopy: String { t("Abrir outra cópia", "Open another copy") }
+    public static func closeItFirst(_ app: String) -> String {
+        t("Feche o projeto no \(app) e abra o arquivo de novo.", "Close the project in \(app) and open the file again.")
+    }
     public static var makeDefault: String { t("Tornar padrão para .3mf", "Make default for .3mf") }
     public static var close: String { t("Fechar", "Close") }
     public static var defaultFailed: String { t("Não consegui tornar padrão", "Could not set as default") }

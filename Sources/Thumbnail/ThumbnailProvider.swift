@@ -42,9 +42,9 @@ final class ThumbnailProvider: QLThumbnailProvider {
         }
     }
 
-    /// App lembrado no xattr do arquivo; sem memória, a regra padrão pela marca da impressora.
+    /// Mesma regra do roteamento: memória do xattr enquanto a impressora não mudar; senão, a impressora nova.
     func slicerIcon(url: URL, info: ThreeMFInfo) -> NSImage? {
-        guard let app = FileRecord.read(from: url)?.app ?? info.printerModel.flatMap(Mappings().app(for:)) else { return nil }
+        guard let app = Router.expectedApp(info: info, record: FileRecord.read(from: url), mappings: Mappings()) else { return nil }
         let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID)?.path ?? app.path
         guard FileManager.default.fileExists(atPath: path) else { return nil }
         return NSWorkspace.shared.icon(forFile: path)
