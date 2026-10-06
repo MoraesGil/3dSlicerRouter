@@ -18,6 +18,8 @@ public struct PrintScene {
     public var beds: [Bed] = []
     /// cor "#RRGGBB" → malha em mm.
     public var meshes: [String: Buffer] = [:]
+    /// Caminho de extrusão (G-code): pares de pontos por cor.
+    public var lines: [String: [SIMD3<Float>]] = [:]
     public var boundsMin = SIMD3<Float>(repeating: .greatestFiniteMagnitude)
     public var boundsMax = SIMD3<Float>(repeating: -.greatestFiniteMagnitude)
 
@@ -62,15 +64,48 @@ public struct PrintScene {
             guard depth < 16, let file = model(path), let object = file.objects[id] else { return }
             if let mesh = object.mesh, !mesh.triangles.isEmpty {
                 let key = colour(extruder)
-                let base = UInt32(scene.meshes[key]?.positions.count ?? 0)
+                var world: [SIMD3<Float>] = []
+                world.reserveCapacity(mesh.vertices.count)
                 for v in mesh.vertices {
                     let p4 = transform * SIMD4(v, 1)
                     let p = SIMD3(p4.x, p4.y, p4.z)
                     scene.boundsMin = simd_min(scene.boundsMin, p)
                     scene.boundsMax = simd_max(scene.boundsMax, p)
-                    scene.meshes[key, default: Buffer()].positions.append(p)
+                    world.append(p)
                 }
-                scene.meshes[key, default: Buffer()].indices.append(contentsOf: mesh.triangles.lazy.map { $0 + base })
+                let base = UInt32(scene.meshes[key]?.positions.count ?? 0)
+                scene.meshes[key, default: Buffer()].positions.append(contentsOf: world)
+                if mesh.paintTriangle.isEmpty {
+                    scene.meshes[key, default: Buffer()].indices.append(contentsOf: mesh.triangles.lazy.map { $0 + base })
+                } else {
+                    // Triângulos pintados viram sub-triângulos na cor de cada folha; o resto segue indexado.
+                    var plain: [UInt32] = []
+                    plain.reserveCapacity(mesh.triangles.count)
+                    var painted: [String: Buffer] = [:]
+                    var next = 0
+                    for t in 0..<(mesh.triangles.count / 3) {
+                        let i0 = Int(mesh.triangles[3 * t]), i1 = Int(mesh.triangles[3 * t + 1]), i2 = Int(mesh.triangles[3 * t + 2])
+                        guard next < mesh.paintTriangle.count, mesh.paintTriangle[next] == t else {
+                            plain += [UInt32(i0) + base, UInt32(i1) + base, UInt32(i2) + base]
+                            continue
+                        }
+                        PaintDecoder.decode(mesh.paintCode[next][...], world[i0], world[i1], world[i2]) { a, b, c, state in
+                            let target = state == 0 ? key : colour(state)
+                            var buffer = painted[target, default: Buffer()]
+                            let at = UInt32(buffer.positions.count)
+                            buffer.positions += [a, b, c]
+                            buffer.indices += [at, at + 1, at + 2]
+                            painted[target] = buffer
+                        }
+                        next += 1
+                    }
+                    scene.meshes[key, default: Buffer()].indices.append(contentsOf: plain)
+                    for (target, buffer) in painted {
+                        let offset = UInt32(scene.meshes[target]?.positions.count ?? 0)
+                        scene.meshes[target, default: Buffer()].positions.append(contentsOf: buffer.positions)
+                        scene.meshes[target, default: Buffer()].indices.append(contentsOf: buffer.indices.lazy.map { $0 + offset })
+                    }
+                }
             }
             for c in object.components {
                 let part = settings.parts[top]?[c.objectID]
@@ -139,7 +174,13 @@ struct ModelSettings {
 
 /// Um arquivo `.model` do 3MF: objetos (malha ou componentes) e build items.
 final class ModelFile: NSObject, XMLParserDelegate {
-    struct Mesh { var vertices: [SIMD3<Float>] = []; var triangles: [UInt32] = [] }
+    struct Mesh {
+        var vertices: [SIMD3<Float>] = []
+        var triangles: [UInt32] = []
+        /// Triângulos pintados (índice crescente) e o código hex de cada um.
+        var paintTriangle: [Int] = []
+        var paintCode: [String] = []
+    }
     struct Component { let objectID: String; let path: String?; let transform: simd_float4x4 }
     struct Object { var mesh: Mesh?; var components: [Component] = [] }
     struct Item { let objectID: String; let transform: simd_float4x4 }
@@ -178,6 +219,10 @@ final class ModelFile: NSObject, XMLParserDelegate {
         case "triangle":
             if let v1 = a["v1"].flatMap(UInt32.init), let v2 = a["v2"].flatMap(UInt32.init),
                let v3 = a["v3"].flatMap(UInt32.init) {
+                if let paint = a["paint_color"] ?? a["slic3rpe:mmu_segmentation"], !paint.isEmpty, let m = mesh {
+                    mesh?.paintTriangle.append(m.triangles.count / 3)
+                    mesh?.paintCode.append(paint)
+                }
                 mesh?.triangles.append(v1)
                 mesh?.triangles.append(v2)
                 mesh?.triangles.append(v3)
@@ -199,8 +244,8 @@ final class ModelFile: NSObject, XMLParserDelegate {
     func parser(_ p: XMLParser, didEndElement name: String, namespaceURI: String?, qualifiedName: String?) {
         if name == "mesh", let id = current, let m = mesh {
             let n = m.vertices.count
-            let tris = m.triangles.allSatisfy { Int($0) < n } ? m.triangles : []
-            objects[id]?.mesh = Mesh(vertices: m.vertices, triangles: tris)
+            let valid = m.triangles.allSatisfy { Int($0) < n }
+            objects[id]?.mesh = valid ? m : Mesh(vertices: m.vertices)
             mesh = nil
         } else if name == "object" {
             current = nil

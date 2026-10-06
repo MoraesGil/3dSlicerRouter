@@ -1,6 +1,6 @@
 # Samples
 
-Six tiny synthetic 3MF projects, one per routing path. They carry the same metadata Bambu Studio and
+Seven tiny synthetic 3MF projects: one per routing path, plus one with painted faces. They carry the same metadata Bambu Studio and
 Snapmaker Orca write (`printer_model`, bed size, filament colours, plates). The geometry is procedural,
 so the slicers import them as plain models.
 
@@ -10,6 +10,7 @@ so the slicers import them as plain models.
 | `bambu-a1mini-calibration.3mf` | Bambu Lab A1 mini | Bambu Studio | smaller 180 mm bed |
 | `bambu-h2d-four-plates.3mf` | Bambu Lab H2D | Bambu Studio | 4 plates → panoramic preview |
 | `snapmaker-u1-four-colors.3mf` | Snapmaker U1 | Snapmaker Orca | 4 toolheads, 4 colours |
+| `snapmaker-u1-painted-faces.3mf` | Snapmaker U1 | Snapmaker Orca | faces painted with the colour brush (`paint_color`) |
 | `unknown-printer-prusa-mk4s.3mf` | Original Prusa MK4S | asks once | picker + *Always use for this printer* |
 | `no-printer-declared.3mf` | none | classifier or asks | plain 3MF with no slicer metadata |
 

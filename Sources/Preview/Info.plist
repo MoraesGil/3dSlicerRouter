@@ -29,6 +29,7 @@
 			<key>QLSupportedContentTypes</key>
 			<array>
 				<string>org.3mf.3mf</string>
+				<string>com.moraesdev.gcode</string>
 			</array>
 			<key>QLSupportsSearchableItems</key>
 			<false/>

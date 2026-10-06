@@ -10,8 +10,8 @@ settings:
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: ""
     ENABLE_HARDENED_RUNTIME: NO
-    MARKETING_VERSION: "1.2.0"
-    CURRENT_PROJECT_VERSION: "3"
+    MARKETING_VERSION: "1.3.0"
+    CURRENT_PROJECT_VERSION: "4"
 targets:
   SlicerRouter:
     type: application
@@ -19,6 +19,11 @@ targets:
     sources:
       - Sources/Core
       - Sources/App
+      - path: Resources/LaunchAgents/com.moraesdev.3dslicerrouter.indexer.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchAgents
     info:
       path: Sources/App/Info.plist
       properties:
@@ -36,6 +41,11 @@ targets:
             UTTypeTagSpecification:
               public.filename-extension: [3mf, 3MF]
               public.mime-type: [model/3mf]
+          - UTTypeIdentifier: com.moraesdev.gcode
+            UTTypeDescription: G-code
+            UTTypeConformsTo: [public.data, public.content]
+            UTTypeTagSpecification:
+              public.filename-extension: [gcode, GCODE]
         CFBundleDocumentTypes:
           - CFBundleTypeName: 3MF Project
             CFBundleTypeRole: Viewer
@@ -69,13 +79,15 @@ targets:
           NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ThumbnailProvider
           NSExtensionAttributes:
-            QLSupportedContentTypes: [org.3mf.3mf]
+            QLSupportedContentTypes: [org.3mf.3mf, com.moraesdev.gcode]
             QLThumbnailMinimumDimension: 0
     entitlements:
       path: Sources/Thumbnail/Thumbnail.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-only: true
+        com.apple.security.temporary-exception.files.home-relative-path.read-only:
+          - /Library/Application Support/3dSlicerRouter/
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moraesdev.3dslicerrouter.thumbnail
@@ -96,7 +108,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PreviewViewController
           NSExtensionAttributes:
-            QLSupportedContentTypes: [org.3mf.3mf]
+            QLSupportedContentTypes: [org.3mf.3mf, com.moraesdev.gcode]
             QLSupportsSearchableItems: false
             QLIsDataBasedPreview: false
     entitlements:
@@ -104,6 +116,8 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-only: true
+        com.apple.security.temporary-exception.files.home-relative-path.read-only:
+          - /Library/Application Support/3dSlicerRouter/
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moraesdev.3dslicerrouter.preview

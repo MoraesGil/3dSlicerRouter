@@ -74,11 +74,34 @@ The router also teaches Finder about 3MF projects:
   rendered isometric view of the declared printer's bed when the file has none.
 - **Quick Look (Space)** on a single-plate project is a 3D view you can orbit and zoom. Projects with
   several plates show every plate side by side.
+- **Painted colours are exact.** Faces painted with the slicer's colour brush are decoded triangle by
+  triangle (the same subdivision tree Bambu Studio and Orca save), so a four-colour model shows four colours.
+- **G-code too.** `.gcode` files show their embedded thumbnail or, when they have none, the extrusion
+  path drawn in each tool's filament colour. Space opens it in 3D.
 
 <p align="center">
 <img src="docs/images/preview-bambu-h2d-four-plates.png" width="49%" alt="Generated preview of a Bambu Lab H2D project with four plates">
-<img src="docs/images/preview-snapmaker-u1-four-colors.png" width="49%" alt="Generated preview of a four-colour Snapmaker U1 project">
+<img src="docs/images/preview-snapmaker-u1-painted-faces.png" width="49%" alt="Generated preview of a Snapmaker U1 cube with faces painted in four filament colours">
 </p>
+
+## Background previews (optional)
+
+Big projects take seconds to render. Turn on the indexer and they are ready before you open Finder:
+
+```sh
+3dSlicerRouter --background on
+```
+
+- It finds every `.3mf` and `.gcode` on the Mac through Spotlight (no disk crawling) and keeps a catalog.
+- It wakes every 30 minutes at background priority and **only works on AC power, outside Low Power
+  Mode, while the Mac is cool and you have been away for 3 minutes**. It stops as soon as you are back.
+- Previews go to `~/Library/Application Support/3dSlicerRouter/previews`. Finder and Quick Look read
+  them instantly; editing a file invalidates its preview.
+- macOS shows *Background item added*. You can switch it off in **System Settings › General › Login
+  Items** or with `3dSlicerRouter --background off`. The first time it reads files in Desktop,
+  Documents, Downloads or an external drive, macOS may ask you to allow it.
+
+`3dSlicerRouter --index-status` shows what it is doing; the log is `~/Library/Logs/3dSlicerRouter/indexer.log`.
 
 ## How it decides
 
@@ -118,7 +141,7 @@ Dependencies, update and **uninstall**: [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Try it
 
-Six small synthetic projects in [`samples/`](samples/) cover every path:
+Seven small synthetic projects in [`samples/`](samples/) cover every path:
 
 ```sh
 open samples/bambu-a1-keychain-tray.3mf        # Bambu Studio
@@ -137,7 +160,11 @@ open samples/unknown-printer-prusa-mk4s.3mf    # asks once
 | `--inspect file.3mf…` | Printer, thumbnail, memory and decision, without opening or writing anything |
 | `--map "<printer>" /Applications/App.app` | Send that printer to any slicer |
 | `--mappings` | List brand defaults and your mappings |
-| `--render file.3mf out.png [px]` | Isometric plate preview as PNG |
+| `--render file.3mf\|file.gcode out.png [px]` | Isometric preview as PNG |
+| `--background on\|off\|status` | Background preview indexer |
+| `--index [--limit N]` | Index and render now, ignoring the idle rule |
+| `--index-status` | Indexer state, catalog totals, log path |
+| `--catalog [text]` | Every 3MF and G-code found, with printer and preview state |
 | `--forget file.3mf…` | Erase the router's memory for these files |
 | `--set-default` | Make the router the default app for `.3mf` |
 
@@ -165,11 +192,14 @@ macOS hands it only the file you opened.
 
 **Does it phone home?** No. The only network call is the optional classifier on `localhost`.
 
+**Does it run in the background?** Only if you turn on the indexer, and then only while the Mac is idle
+and plugged in.
+
 ## Roadmap
 
 - [ ] Built-in defaults for OrcaSlicer, PrusaSlicer, Elegoo Slicer and Creality Print (today: *Other app…* or `--map`)
 - [ ] Settings window for printer → slicer mappings
-- [ ] Painted multi-material faces in the preview
+- [ ] Extrusion-width ribbons in the G-code preview
 - [ ] Notarized release
 
 Ideas, printers that route wrong and PRs are welcome: [CONTRIBUTING.md](CONTRIBUTING.md).

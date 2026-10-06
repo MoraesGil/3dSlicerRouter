@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 // CLI para conferir sem abrir app nem roubar foco:
 //   3dSlicerRouter --inspect arq.3mf…      decisão que seria tomada (não grava nada)
@@ -50,8 +51,14 @@ case "--render":
     let px = args.count > 3 ? Double(args[3]) ?? 1024 : 1024
     do {
         let start = Date()
-        let info = try ThreeMF.info(url: url)
-        try PreviewRenderer.png(url: url, info: info, size: CGSize(width: px, height: px)).write(to: URL(fileURLWithPath: args[2]))
+        let size = CGSize(width: px, height: px)
+        let png: Data
+        if url.pathExtension.lowercased() == "gcode" {
+            png = try PreviewRenderer.encode(PreviewRenderer.renderGCode(url: url, info: GCode.metadata(url: url).info, size: size))
+        } else {
+            png = try PreviewRenderer.png(url: url, info: ThreeMF.info(url: url), size: size)
+        }
+        try png.write(to: URL(fileURLWithPath: args[2]))
         print(String(format: "ok %.2fs", Date().timeIntervalSince(start)))
     } catch {
         print("erro \(error)"); exit(1)
@@ -67,6 +74,33 @@ case "--mappings":
     let m = Store().mappings()
     for (brand, app) in m.byBrand.sorted(by: { $0.key < $1.key }) { print("\(brand) …  → \(app.name)  (padrão)") }
     for (model, app) in m.byModel.sorted(by: { $0.key < $1.key }) { print("\(model)  → \(app.name)") }
+case "--index":
+    // Passada manual: ignora as condições de ociosidade. --limit N limita renders.
+    let limit = args.firstIndex(of: "--limit").flatMap { args.count > $0 + 1 ? Int(args[$0 + 1]) : nil }
+    let s = Indexer.run(store: Store(), force: true, limit: limit, budget: .infinity)
+    print("achados \(s.found), renderizados \(s.rendered), já ok \(s.skipped), erros \(s.failed)")
+case "--index-agent":
+    // Chamado pelo LaunchAgent: só trabalha na tomada e com o Mac ocioso.
+    Indexer.run(store: Store(), force: false)
+case "--index-status":
+    print("background: \(Indexer.statusText())")
+    print("agora: \(Indexer.whyNotNow() ?? "pronto para indexar (na tomada e ocioso)")")
+    print(Store().catalogStats())
+    print("log: \(Indexer.log.path)")
+case "--catalog":
+    for row in Store().catalog(matching: args.count > 1 ? args[1] : nil) { print(row) }
+case "--background":
+    do {
+        switch args.count > 1 ? args[1] : "status" {
+        case "on": try Indexer.service.register()
+        case "off": try Indexer.service.unregister()
+        default: break
+        }
+        print("background: \(Indexer.statusText())")
+        if Indexer.service.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+    } catch {
+        print("erro: \(error.localizedDescription)"); exit(1)
+    }
 case "--version":
     print(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev")
 case "--forget":

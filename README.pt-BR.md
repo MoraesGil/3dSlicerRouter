@@ -74,11 +74,36 @@ O router também ensina o Finder a mostrar projetos 3MF:
   quando o arquivo não tem, uma vista isométrica renderizada da mesa da impressora declarada.
 - **Quick Look (Espaço)** em projeto de uma mesa é um 3D para girar e dar zoom. Projetos com várias
   mesas mostram todas lado a lado.
+- **Cores pintadas exatas.** Faces pintadas com o pincel de cor do fatiador são decodificadas triângulo
+  a triângulo (a mesma árvore de subdivisão que o Bambu Studio e o Orca salvam): modelo de quatro cores
+  aparece com quatro cores.
+- **G-code também.** Arquivos `.gcode` mostram a thumbnail embutida ou, sem ela, o caminho de extrusão
+  desenhado na cor do filamento de cada ferramenta. O Espaço abre em 3D.
 
 <p align="center">
 <img src="docs/images/preview-bambu-h2d-four-plates.png" width="49%" alt="Preview gerado de um projeto Bambu Lab H2D com quatro mesas">
-<img src="docs/images/preview-snapmaker-u1-four-colors.png" width="49%" alt="Preview gerado de um projeto Snapmaker U1 com quatro cores">
+<img src="docs/images/preview-snapmaker-u1-painted-faces.png" width="49%" alt="Preview gerado de um cubo Snapmaker U1 com faces pintadas em quatro cores de filamento">
 </p>
+
+## Previews em background (opcional)
+
+Projetos grandes levam segundos para renderizar. Ligue o indexador e eles ficam prontos antes de você
+abrir o Finder:
+
+```sh
+3dSlicerRouter --background on
+```
+
+- Acha todos os `.3mf` e `.gcode` do Mac pelo Spotlight (sem varrer o disco) e mantém um catálogo.
+- Acorda a cada 30 minutos com prioridade de background e **só trabalha na tomada, fora do modo de pouca
+  energia, com o Mac frio e você ausente há 3 minutos**. Para assim que você volta.
+- Os previews ficam em `~/Library/Application Support/3dSlicerRouter/previews`. O Finder e o Quick Look
+  leem na hora; editar o arquivo invalida o preview dele.
+- O macOS mostra *Item de segundo plano adicionado*. Dá para desligar em **Ajustes do Sistema › Geral ›
+  Itens de Início** ou com `3dSlicerRouter --background off`. Na primeira vez que ele ler arquivos da
+  Mesa, Documentos, Downloads ou de um disco externo, o macOS pode pedir sua autorização.
+
+`3dSlicerRouter --index-status` mostra o que ele está fazendo; o log fica em `~/Library/Logs/3dSlicerRouter/indexer.log`.
 
 ## Como decide
 
@@ -118,7 +143,7 @@ Dependências, atualização e **desinstalação**: [docs/INSTALL.pt-BR.md](docs
 
 ## Teste
 
-Seis projetos sintéticos pequenos em [`samples/`](samples/) cobrem todos os caminhos:
+Sete projetos sintéticos pequenos em [`samples/`](samples/) cobrem todos os caminhos:
 
 ```sh
 open samples/bambu-a1-keychain-tray.3mf        # Bambu Studio
@@ -137,7 +162,11 @@ open samples/unknown-printer-prusa-mk4s.3mf    # pergunta uma vez
 | `--inspect arq.3mf…` | Impressora, thumbnail, memória e decisão, sem abrir nem gravar nada |
 | `--map "<impressora>" /Applications/App.app` | Manda essa impressora para qualquer fatiador |
 | `--mappings` | Lista os padrões por marca e os seus mapeamentos |
-| `--render arq.3mf out.png [px]` | Preview isométrico da mesa em PNG |
+| `--render arq.3mf\|arq.gcode out.png [px]` | Preview isométrico em PNG |
+| `--background on\|off\|status` | Indexador de previews em background |
+| `--index [--limit N]` | Indexa e renderiza agora, ignorando a regra de ociosidade |
+| `--index-status` | Estado do indexador, totais do catálogo e caminho do log |
+| `--catalog [texto]` | Todos os 3MF e G-code achados, com impressora e estado do preview |
 | `--forget arq.3mf…` | Apaga a memória do router nesses arquivos |
 | `--set-default` | Torna o router o app padrão de `.3mf` |
 
@@ -166,11 +195,13 @@ Disco. O macOS entrega a ele só o arquivo que você abriu.
 
 **Manda dados para algum lugar?** Não. A única chamada de rede é o classificador opcional em `localhost`.
 
+**Ele roda em background?** Só se você ligar o indexador, e mesmo assim só com o Mac ocioso e na tomada.
+
 ## Roadmap
 
 - [ ] Padrões prontos para OrcaSlicer, PrusaSlicer, Elegoo Slicer e Creality Print (hoje: *Outro app…* ou `--map`)
 - [ ] Janela de configurações para os mapeamentos impressora → fatiador
-- [ ] Faces pintadas (multimaterial) no preview
+- [ ] Largura de extrusão (fitas) no preview de G-code
 - [ ] Release notarizado
 
 Ideias, impressoras que roteiam errado e PRs são bem-vindos: [CONTRIBUTING.md](CONTRIBUTING.md).

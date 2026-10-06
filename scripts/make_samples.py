@@ -86,7 +86,9 @@ def write(name, objects, printer=None, bed=(256, 256), colours=("#FFFFFF",), pla
     for i, o in enumerate(objects, 1):
         v, t = o["mesh"]
         verts = "".join(f'<vertex x="{x:.4f}" y="{y:.4f}" z="{z:.4f}"/>' for x, y, z in v)
-        tris = "".join(f'<triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in t)
+        paint = o.get("paint", {})
+        tris = "".join(f'<triangle v1="{a}" v2="{b}" v3="{c}"' + (f' paint_color="{paint[k]}"' if k in paint else "") + "/>"
+                       for k, (a, b, c) in enumerate(t))
         res.append(f'<object id="{i}" type="model"><mesh><vertices>{verts}</vertices><triangles>{tris}</triangles></mesh></object>')
         build.append(f'<item objectid="{i}" transform="1 0 0 0 1 0 0 0 1 {o["x"]:.3f} {o["y"]:.3f} 0" printable="1"/>')
     model = ('<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -167,6 +169,14 @@ def main():
           colours=("#FF7A00",), preset="0.20mm SPEED @MK4S",
           objects=[{"name": "benchy-ish", "mesh": stack((box(60, 30, 8), 0), (box(30, 26, 22), 8), (cylinder(5, 10), 30)),
                     "x": 125, "y": 105}])
+
+    # Pintura por triângulo (pincel de cor do Bambu/Orca): topo inteiro no filamento 2 ("8"),
+    # e a face da frente: um triângulo dividido em 4 (azul, amarelo, cor da peça, vermelho) e outro todo amarelo ("1C" = 3 + 1).
+    painted = box(60, 60, 40)
+    write("snapmaker-u1-painted-faces.3mf", printer="Snapmaker U1", bed=(270, 270),
+          colours=("#F2F2F2", "#E5322D", "#2F6FED", "#F5C211"), preset="0.20mm Standard @U1",
+          objects=[{"name": "painted-cube", "mesh": painted, "x": 135, "y": 135, "extruder": 1,
+                    "paint": {2: "8", 3: "8", 4: "0C1C083", 5: "1C"}}])
 
     write("no-printer-declared.3mf",
           objects=[{"name": "ring", "mesh": torus(30, 9), "x": 128, "y": 128}])

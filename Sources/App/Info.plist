@@ -66,6 +66,25 @@
 				</array>
 			</dict>
 		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>G-code</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.moraesdev.gcode</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>gcode</string>
+					<string>GCODE</string>
+				</array>
+			</dict>
+		</dict>
 	</array>
 </dict>
 </plist>

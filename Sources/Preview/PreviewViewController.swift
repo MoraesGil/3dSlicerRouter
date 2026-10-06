@@ -13,9 +13,17 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let aspect = Float(max(view.bounds.width, 1) / max(view.bounds.height, 1))
         DispatchQueue.global(qos: .userInitiated).async {
             do {
+                if url.pathExtension.lowercased() == "gcode" {
+                    let info = try GCode.metadata(url: url).info
+                    let prepared = PreviewRenderer.prepare(scene: try GCode.toolpath(url: url, info: info), aspect: aspect)
+                    DispatchQueue.main.async { self.show(prepared, info: info); handler(nil) }
+                    return
+                }
                 let info = try ThreeMF.info(url: url)
                 if info.plateCount > 1 {
-                    let image = try PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1600, height: 1600))
+                    let image = try PreviewCache.cachedURL(for: url).flatMap { try? Data(contentsOf: $0) }
+                        .flatMap { NSBitmapImageRep(data: $0)?.cgImage }
+                        ?? PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1600, height: 1600))
                     DispatchQueue.main.async { self.show(image: image); handler(nil) }
                 } else {
                     let prepared = try PreviewRenderer.prepare(url: url, info: info, aspect: aspect)

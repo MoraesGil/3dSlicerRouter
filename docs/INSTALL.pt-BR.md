@@ -81,6 +81,7 @@ Os mapeamentos e a memória dos arquivos são mantidos.
 
 O que o script faz, se preferir fazer à mão:
 
+0. **Desligar o indexador em background** (se ligou): `3dSlicerRouter --background off`.
 1. **Remover o app e as extensões do Quick Look.**
    ```sh
    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u /Applications/3dSlicerRouter.app
@@ -91,7 +92,8 @@ O que o script faz, se preferir fazer à mão:
    → escolha o fatiador → **Alterar Tudo…**.
 3. **Apagar os dados.**
    ```sh
-   rm -rf ~/Library/Application\ Support/3dSlicerRouter      # índice SQLite (router.sqlite)
+   rm -rf ~/Library/Application\ Support/3dSlicerRouter      # índice SQLite, catálogo e previews
+   rm -rf ~/Library/Logs/3dSlicerRouter                      # log do indexador
    defaults delete com.moraesdev.3dslicerrouter 2>/dev/null # configurações (endpoint LAYA)
    qlmanage -r cache                                        # limpa thumbnails em cache
    ```
@@ -101,7 +103,8 @@ O que o script faz, se preferir fazer à mão:
    find ~/Downloads -name '*.3mf' -exec xattr -d com.moraesdev.slicer-router {} \; 2>/dev/null
    ```
 
-Nada mais é instalado: sem launch agents, itens de login, extensões de kernel ou de sistema.
+Nada mais é instalado. O único item de segundo plano é o indexador opcional, que fica dentro do app e
+some junto com ele; não há extensões de kernel nem de sistema.
 
 ## Problemas comuns
 

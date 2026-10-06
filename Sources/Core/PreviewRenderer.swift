@@ -24,7 +24,10 @@ public enum PreviewRenderer {
     """
 
     public static func png(url: URL, info: ThreeMFInfo, size: CGSize = CGSize(width: 1024, height: 1024)) throws -> Data {
-        let image = try render(url: url, info: info, size: size)
+        try encode(render(url: url, info: info, size: size))
+    }
+
+    public static func encode(_ image: CGImage) throws -> Data {
         guard let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {
             throw RenderError.encode
         }
@@ -32,7 +35,16 @@ public enum PreviewRenderer {
     }
 
     public static func render(url: URL, info: ThreeMFInfo, size: CGSize) throws -> CGImage {
-        let prepared = try prepare(url: url, info: info, aspect: Float(size.width / size.height))
+        try render(scene: PrintScene.load(url: url, info: info), info: info, size: size)
+    }
+
+    /// Caminho de extrusão de um G-code, no mesmo estilo de mesa.
+    public static func renderGCode(url: URL, info: ThreeMFInfo, size: CGSize) throws -> CGImage {
+        try render(scene: GCode.toolpath(url: url, info: info), info: info, size: size)
+    }
+
+    public static func render(scene: PrintScene, info: ThreeMFInfo, size: CGSize) throws -> CGImage {
+        let prepared = prepare(scene: scene, aspect: Float(size.width / size.height))
         guard let device = MTLCreateSystemDefaultDevice() else { throw RenderError.noMetal }
         let renderer = SCNRenderer(device: device, options: nil)
         renderer.scene = prepared.scene
@@ -42,7 +54,10 @@ public enum PreviewRenderer {
     }
 
     public static func prepare(url: URL, info: ThreeMFInfo, aspect: Float) throws -> Prepared {
-        let scene = try PrintScene.load(url: url, info: info)
+        try prepare(scene: PrintScene.load(url: url, info: info), aspect: aspect)
+    }
+
+    public static func prepare(scene: PrintScene, aspect: Float) -> Prepared {
         let (root, bounds) = build(scene)
         let scn = SCNScene()
         scn.background.contents = background
@@ -111,6 +126,11 @@ public enum PreviewRenderer {
             material.shaderModifiers = [.surface: flatNormal]
             geometry.materials = [material]
             root.addChildNode(SCNNode(geometry: geometry))
+        }
+        // G-code: linhas de extrusão; um leve escurecimento separa filamento claro da mesa clara.
+        for (hex, points) in scene.lines.sorted(by: { $0.key < $1.key }) where points.count >= 2 {
+            let colour = NSColor(hex: hex).blended(withFraction: 0.14, of: inkColour) ?? NSColor(hex: hex)
+            root.addChildNode(lines(points, colour))
         }
         return (root, (lo, hi))
     }

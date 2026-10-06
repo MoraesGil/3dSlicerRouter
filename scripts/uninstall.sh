@@ -16,10 +16,13 @@ done
 APP="/Applications/3dSlicerRouter.app"
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
+# Stop the optional background indexer before its bundle disappears.
+[[ -x "$APP/Contents/MacOS/3dSlicerRouter" ]] && "$APP/Contents/MacOS/3dSlicerRouter" --background off >/dev/null 2>&1
+
 # Remove first: the app owns the org.3mf.3mf type declaration, so the new default must be set after it is gone.
 [[ -d "$APP" ]] && "$LSREGISTER" -u "$APP"
 rm -rf "$APP"
-rm -rf "$HOME/Library/Application Support/3dSlicerRouter"
+rm -rf "$HOME/Library/Application Support/3dSlicerRouter" "$HOME/Library/Logs/3dSlicerRouter"
 defaults delete com.moraesdev.3dslicerrouter 2>/dev/null
 qlmanage -r cache >/dev/null 2>&1
 echo "removed app, index and settings"
