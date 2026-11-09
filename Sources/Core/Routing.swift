@@ -13,9 +13,11 @@ public struct SlicerApp: Codable, Equatable, Hashable {
 
     public static let bambuStudio = SlicerApp(
         bundleID: "com.bambulab.bambu-studio", path: "/Applications/BambuStudio.app", name: "Bambu Studio")
+    public static let orcaSlicer = SlicerApp(
+        bundleID: "com.orcaslicer.OrcaSlicer", path: "/Applications/OrcaSlicer.app", name: "OrcaSlicer")
     public static let snapmakerOrca = SlicerApp(
         bundleID: "com.snapmaker.snapmaker-orca", path: "/Applications/Snapmaker Orca.app", name: "Snapmaker Orca")
-    public static let known = [bambuStudio, snapmakerOrca]
+    public static let known = [orcaSlicer, bambuStudio, snapmakerOrca]
 }
 
 /// Decisão gravada no arquivo (xattr) e no índice SQLite.
@@ -63,12 +65,12 @@ extension FileRecord {
 /// Impressora → app. Modelo exato vence marca; as marcas padrão valem mesmo sem SQLite.
 public struct Mappings {
     public var byModel: [String: SlicerApp] = [:]
-    public var byBrand: [String: SlicerApp] = ["Bambu Lab": .bambuStudio, "Snapmaker": .snapmakerOrca]
+    public var byBrand: [String: SlicerApp] = ["Bambu Lab": .bambuStudio, "Snapmaker": .orcaSlicer, "Prusa": .orcaSlicer]
 
     public init() {}
 
     public func app(for model: String) -> SlicerApp? {
-        byModel[model] ?? ThreeMFInfo.brand(of: model).flatMap { byBrand[$0] }
+        byModel[model] ?? ThreeMFInfo.brand(of: model).flatMap { byBrand[$0] } ?? .orcaSlicer
     }
 }
 
@@ -79,26 +81,28 @@ public enum AskReason: Equatable {
     case unknownPrinter(String)
     /// Impressora do arquivo mudou para outra marca que não Bambu.
     case printerChanged(from: String?, to: String)
-    /// Arquivo sem `printer_model` e o LAYA não teve certeza.
+    /// Arquivo sem `printer_model` nem escolha manual salva.
     case noPrinter
+    /// O app escolhido anteriormente não está mais instalado.
+    case appUnavailable(String)
 }
 
 public enum Decision: Equatable {
     case open(SlicerApp, reason: String)
     case ask(AskReason, suggested: SlicerApp?)
-    /// Sem `printer_model`: classificar (LAYA) antes de perguntar.
-    case classify
 }
 
 public enum Router {
     public static func decide(info: ThreeMFInfo, record: FileRecord?, mappings: Mappings, optionHeld: Bool) -> Decision {
         let model = info.printerModel
         let mapped = model.flatMap(mappings.app(for:))
-        if optionHeld { return .ask(.manual, suggested: record?.app ?? mapped) }
+        if optionHeld { return .ask(.manual, suggested: record?.app ?? mapped ?? .orcaSlicer) }
 
         guard let model else {
-            if let record, record.printerModel == nil { return .open(record.app, reason: "lembrado (sem impressora)") }
-            return .classify
+            if let record, record.printerModel == nil, record.override {
+                return .open(record.app, reason: "lembrado (sem impressora)")
+            }
+            return .ask(.noPrinter, suggested: nil)
         }
         if let record {
             if record.printerModel == model { return .open(record.app, reason: "lembrado") }
@@ -113,12 +117,11 @@ public enum Router {
         return .ask(.unknownPrinter(model), suggested: nil)
     }
 
-    /// App que o próximo duplo clique deve abrir, sem perguntar nada (ícone do Finder).
+    /// Read-only target preview for the CLI; asking does not open an application.
     public static func expectedApp(info: ThreeMFInfo, record: FileRecord?, mappings: Mappings) -> SlicerApp? {
         switch decide(info: info, record: record, mappings: mappings, optionHeld: false) {
         case let .open(app, _): return app
         case let .ask(_, suggested): return suggested ?? record?.app
-        case .classify: return record?.app
         }
     }
 }

@@ -10,9 +10,9 @@ final class Store {
     private let coder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init() {
-        try? FileManager.default.createDirectory(at: Self.supportDir, withIntermediateDirectories: true)
-        let path = Self.supportDir.appendingPathComponent("router.sqlite").path
+    init(directory: URL = Store.supportDir) {
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let path = directory.appendingPathComponent("router.sqlite").path
         if sqlite3_open(path, &db) != SQLITE_OK { db = nil; return }
         exec("""
         CREATE TABLE IF NOT EXISTS files(uuid TEXT PRIMARY KEY, path TEXT, record TEXT, updated_at REAL);
@@ -71,13 +71,17 @@ final class Store {
     // MARK: catálogo (indexador)
 
     func isCatalogued(_ path: String, size: Int, modified: Date) -> Bool {
-        !query("SELECT 1 FROM catalog WHERE path = ? AND size = ? AND mtime = ?",
-               [path, Double(size), modified.timeIntervalSince1970.rounded()]).isEmpty
+        guard let preview = query("SELECT CASE WHEN kind = 'gcode' AND embedded = 1 THEN 'embedded-gcode' ELSE preview END FROM catalog WHERE path = ? AND size = ? AND mtime = ? AND error = ''",
+                                  [path, Double(size), modified.timeIntervalSince1970]).first else { return false }
+        if preview == "embedded-gcode" { return true }
+        if size > Indexer.maxRenderBytes { return true }
+        return !preview.isEmpty && URL(fileURLWithPath: preview).lastPathComponent == PreviewCache.name(for: URL(fileURLWithPath: path))
+            && FileManager.default.fileExists(atPath: preview)
     }
 
     func upsertCatalog(_ e: Indexer.Entry) {
         run("INSERT OR REPLACE INTO catalog VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [e.path, e.kind, Double(e.size), e.modified.timeIntervalSince1970.rounded(), e.printer ?? "",
+            [e.path, e.kind, Double(e.size), e.modified.timeIntervalSince1970, e.printer ?? "",
              Double(e.plates), Double(e.embedded ? 1 : 0), e.preview ?? "", e.error ?? "", Date().timeIntervalSince1970])
     }
 
@@ -101,7 +105,7 @@ final class Store {
     func catalogStats() -> String {
         query("""
             SELECT count(*) || ' arquivos: ' || sum(kind = '3mf') || ' .3mf, ' || sum(kind = 'gcode') || ' .gcode; ' ||
-              sum(embedded = 1) || ' com thumbnail embutida, ' || sum(preview <> '' AND embedded = 0) || ' renderizados, ' ||
+              sum(embedded = 1) || ' com thumbnail embutida, ' || sum(preview <> '') || ' renderizados, ' ||
               sum(error <> '') || ' com erro' FROM catalog
             """, []).first ?? "catálogo vazio"
     }

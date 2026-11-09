@@ -6,7 +6,7 @@ printer_model read from the file, and the file travels to the slicer that owns t
 Everything is embedded (no JS, no external requests) so GitHub can show it through <img>.
 
 Needs the installed router (/Applications/3dSlicerRouter.app) for the previews, and Bambu Studio
-and Snapmaker Orca in /Applications for their app icons. Uses sips (macOS) for conversions.
+and official OrcaSlicer in /Applications for their app icons. Uses sips (macOS) for conversions.
 
     python3 scripts/make_routing_svg.py
 """
@@ -21,11 +21,11 @@ OUT = ROOT / "docs/images/routing.svg"
 
 SCENES = [
     {"sample": "bambu-a1-keychain-tray.3mf", "printer": "Bambu Lab A1", "app": "Bambu Studio", "target": "bambu"},
-    {"sample": "snapmaker-u1-four-colors.3mf", "printer": "Snapmaker U1", "app": "Snapmaker Orca", "target": "orca"},
+    {"sample": "snapmaker-u1-four-colors.3mf", "printer": "Snapmaker U1", "app": "OrcaSlicer", "target": "orca"},
 ]
 APPS = {
     "bambu": ("Bambu Studio", "/Applications/BambuStudio.app/Contents/Resources/Icon.icns", "Bambu Lab printers"),
-    "orca": ("Snapmaker Orca", "/Applications/Snapmaker Orca.app/Contents/Resources/Icon.icns", "Snapmaker printers"),
+    "orca": ("OrcaSlicer", "/Applications/OrcaSlicer.app/Contents/Resources/Icon.icns", "Default for non-Bambu printers"),
 }
 
 
@@ -89,7 +89,7 @@ def svg(thumbs, icons):
 
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 430" width="960" height="430" role="img" aria-labelledby="t d">
 <title id="t">3dSlicerRouter picks the slicer from the printer inside the .3mf</title>
-<desc id="d">A Bambu Lab A1 project opens in Bambu Studio; a Snapmaker U1 project opens in Snapmaker Orca. The router reads printer_model from each file.</desc>
+<desc id="d">A Bambu Lab A1 project opens in Bambu Studio; a Snapmaker U1 project opens in OrcaSlicer. The router reads printer_model from each file.</desc>
 <style>
   svg {{ --bg:#ffffff; --panel:#f6f8fa; --line:#d0d7de; --ink:#1f2328; --muted:#59636e; --accent:#1a7f37; --tint:rgba(26,127,55,.16); }}
   @media (prefers-color-scheme: dark) {{

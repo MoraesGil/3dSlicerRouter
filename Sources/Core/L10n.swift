@@ -22,8 +22,12 @@ public enum L10n {
         t("A impressora do arquivo mudou de \(from) para \(to).", "The file's printer changed from \(from) to \(to).")
     }
     public static var reasonNoPrinter: String {
-        t("O arquivo não declara impressora e a classificação não teve certeza.",
-          "The file declares no printer and the classifier was not confident.")
+        t("O arquivo não declara impressora. Escolha um dos fatiadores instalados.",
+          "The file declares no printer. Choose one of the installed slicers.")
+    }
+    public static func reasonUnavailable(_ app: String) -> String {
+        t("\(app) não está mais instalado. Escolha outro fatiador.",
+          "\(app) is no longer installed. Choose another slicer.")
     }
     public static var otherApp: String { t("Outro app…", "Other app…") }
     public static var cancel: String { t("Cancelar", "Cancel") }
@@ -35,12 +39,14 @@ public enum L10n {
     public static func openFailed(_ app: String) -> String { t("Não consegui abrir no \(app)", "Could not open in \(app)") }
     public static func about(current: String) -> String {
         t("""
-        Abre cada .3mf no fatiador da impressora declarada (Bambu Studio ou Snapmaker Orca).
+        Abre cada .3mf no fatiador definido para a impressora declarada.
+        Sem impressora, pergunta entre os fatiadores instalados.
         Segure ⌥ ao abrir para escolher o app.
 
         App padrão de .3mf agora: \(current)
         """, """
-        Opens every .3mf in the slicer of the printer it was made for (Bambu Studio or Snapmaker Orca).
+        Opens every .3mf in the slicer assigned to its declared printer.
+        Without a printer, asks you to choose an installed slicer.
         Hold ⌥ while opening to pick the app.
 
         Current default app for .3mf: \(current)
@@ -50,15 +56,15 @@ public enum L10n {
         t("\(file) já está aberto no \(app)", "\(file) is already open in \(app)")
     }
     public static func alreadyOpenDirty(_ app: String) -> String {
-        t("Ele tem alterações não salvas. Recarregar fecha esse projeto no \(app), que pergunta antes de descartar, e reabre o arquivo do disco.",
-          "It has unsaved changes. Reload closes that project in \(app), which asks before discarding them, and reopens the file from disk.")
+        t("Há alterações não salvas. Reiniciar fecha esta instância do \(app), que pode conter outras janelas. O fatiador pode perguntar antes de descartar alterações e reabrir o arquivo do disco.",
+          "There are unsaved changes. Restart closes this \(app) instance, which may contain other windows. The slicer may ask before discarding changes and reopening the file from disk.")
     }
     public static var alreadyOpenClean: String {
-        t("Sem alterações não salvas. Abrir de novo criaria uma segunda janela com o mesmo projeto.",
-          "No unsaved changes. Opening it again would start a second window with the same project.")
+        t("Abrir de novo pode criar outra instância com o mesmo projeto. Reiniciar fecha a instância atual, que pode conter outras janelas.",
+          "Opening again may start another instance with the same project. Restart closes the current instance, which may contain other windows.")
     }
     public static func switchTo(_ app: String) -> String { t("Ir para o \(app)", "Switch to \(app)") }
-    public static var reloadFromDisk: String { t("Recarregar do disco", "Reload from disk") }
+    public static var reloadFromDisk: String { t("Reiniciar e recarregar", "Restart and reload") }
     public static var openAnotherCopy: String { t("Abrir outra cópia", "Open another copy") }
     public static func closeItFirst(_ app: String) -> String {
         t("Feche o projeto no \(app) e abra o arquivo de novo.", "Close the project in \(app) and open the file again.")

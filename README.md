@@ -5,7 +5,7 @@
 ### Open every `.3mf` in the right slicer, automatically.
 
 Double-click a 3MF on your Mac. 3dSlicerRouter reads the printer saved inside the file and opens
-**Bambu Studio**, **Snapmaker Orca** or any slicer you choose.
+**Bambu Studio**, **OrcaSlicer**, **Snapmaker Orca** or any slicer you choose.
 
 [![CI](https://github.com/MoraesGil/3dSlicerRouter/actions/workflows/ci.yml/badge.svg)](https://github.com/MoraesGil/3dSlicerRouter/actions/workflows/ci.yml)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
@@ -13,7 +13,7 @@ Double-click a 3MF on your Mac. 3dSlicerRouter reads the printer saved inside th
 ![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-<img src="docs/images/routing.svg" width="100%" alt="Animation: a Bambu Lab A1 project opens in Bambu Studio and a Snapmaker U1 project opens in Snapmaker Orca, because the router reads printer_model from each file">
+<img src="docs/images/routing.svg" width="100%" alt="Animation: a Bambu Lab A1 project opens in Bambu Studio and a Snapmaker U1 project opens in OrcaSlicer, because the router reads printer_model from each file">
 
 [Install](docs/INSTALL.md) · [Try the samples](samples/) · [How it decides](#how-it-decides) · [Português](README.pt-BR.md)
 
@@ -26,20 +26,22 @@ have one default app for it. With printers from two brands you end up opening a 
 Bambu Studio (or an A1 project in Orca) and getting preset warnings, missing filaments or a bed type
 that changed without you noticing.
 
-3dSlicerRouter becomes the default app for `.3mf` and gets out of the way. It has no window: it
-reads `printer_model` from the project and hands the file to the slicer that owns that printer.
+3dSlicerRouter becomes the default app for `.3mf` and gets out of the way. It reads `printer_model` from the project and hands the file to the configured slicer.
+When the file has no printer metadata, it asks you to choose an installed slicer.
 
 ## Any printer, any slicer
 
 | | Printer in the file | Opens in |
 |:-:|---|---|
 | <img src="docs/images/app-bambu-studio.png" width="40" alt="Bambu Studio"> | `Bambu Lab A1`, `A1 mini`, `P1S`, `X1C`, `H2D`, … | **Bambu Studio** |
-| <img src="docs/images/app-snapmaker-orca.png" width="40" alt="Snapmaker Orca"> | `Snapmaker U1`, `J1`, `Artisan`, … | **Snapmaker Orca** |
-| | Anything else (`Original Prusa MK4S`, `Elegoo Centauri Carbon`, …) | **Your choice**, asked once and remembered |
+| | `Snapmaker U1`, `J1`, `Artisan`, … | **OrcaSlicer (official)** |
+| | `Prusa`, `Original Prusa`, … | **OrcaSlicer (official)** |
+| | Anything else (`Elegoo Centauri Carbon`, …) | **OrcaSlicer (official)** |
+| | No printer declared | **Ask among installed slicers** |
 
-For a printer it has never seen, the router asks once: Bambu Studio, Snapmaker Orca or
-**Other app…**, a native picker where any slicer in `/Applications` works (OrcaSlicer, PrusaSlicer,
-Creality Print, Elegoo Slicer, Cura). Tick *Always use for this printer* and you are never asked again.
+The official OrcaSlicer is the default for new non-Bambu projects. Hold Option when opening to
+choose among installed slicers or **Other app…**, a native picker for any slicer
+in `/Applications`. Tick *Always use for this printer* to override the default for that model.
 You can also map printers from the terminal:
 
 ```sh
@@ -52,26 +54,26 @@ Need the other slicer for one file? **Hold ⌥ (Option) while opening** and pick
 
 ## Already open? No second window
 
-Bambu Studio and Snapmaker Orca start a **new instance** when you open a project that is already
+Bambu Studio, OrcaSlicer and Snapmaker Orca start a **new instance** when you open a project that is already
 open, so you end up editing the same file in two windows. 3dSlicerRouter checks first. When the file
 is the open project of a running slicer, it tells you so, says whether it has unsaved changes, and
 offers:
 
-- **Switch to the slicer**: brings that exact window forward.
-- **Reload from disk**: closes that project the normal way (the slicer asks before discarding
-  unsaved changes) and reopens the saved file.
+- **Switch to the slicer**: activates the running slicer instance.
+- **Restart and reload**: closes that slicer instance, which may contain other windows. The slicer
+  can ask about unsaved changes before the saved file is reopened.
 - **Open another copy**: the old behaviour, if you really want it.
 
 It reads the recovery folders the slicers keep in `$TMPDIR` while a project is open, so it needs no
 extra permissions. `3dSlicerRouter --inspect file.3mf` shows the same information.
 
-## See where a file goes before you open it
+## Finder thumbnails and 3D previews
 
 The router also teaches Finder about 3MF projects:
 
-- **List view and small icons** show the icon of the slicer the file will open in.
-- **Larger icons, Gallery and the preview pane** show the plate: the image the slicer saved, or a
-  rendered isometric view of the declared printer's bed when the file has none.
+- **Finder thumbnails at every size** show the first plate. The current indexed render takes priority;
+  without it, a request renders current geometry. The slicer's saved first-plate image is used only if
+  rendering fails or the compressed project exceeds 250 MB, so that fallback can be out of date.
 - **Quick Look (Space)** on a single-plate project is a 3D view you can orbit and zoom. Projects with
   several plates show every plate side by side.
 - **Painted colours are exact.** Faces painted with the slicer's colour brush are decoded triangle by
@@ -86,6 +88,12 @@ The router also teaches Finder about 3MF projects:
 
 ## Background previews (optional)
 
+> **Ad-hoc build limitation:** background startup is experimental. On the local test Mac, macOS
+> intermittently rejected the helper with a launch constraint violation even when registration was
+> enabled and the signature verified. Routing and on-demand previews do not depend on this helper.
+> If it cannot start, use `--render` or the foreground `--index` command. Do not disable system security.
+
+
 Big projects take seconds to render. Turn on the indexer and they are ready before you open Finder:
 
 ```sh
@@ -95,8 +103,11 @@ Big projects take seconds to render. Turn on the indexer and they are ready befo
 - It finds every `.3mf` and `.gcode` on the Mac through Spotlight (no disk crawling) and keeps a catalog.
 - It wakes every 30 minutes at background priority and **only works on AC power, outside Low Power
   Mode, while the Mac is cool and you have been away for 3 minutes**. It stops as soon as you are back.
-- Previews go to `~/Library/Application Support/3dSlicerRouter/previews`. Finder and Quick Look read
-  them instantly; editing a file invalidates its preview.
+- Rendering runs in a separate executable, with a 20-minute run limit and conditions checked every
+  5 seconds even during a complex preview, so it cannot occupy the Finder handler.
+- Previews go to `~/Library/Application Support/3dSlicerRouter/previews`. Saves invalidate the generated
+  image, including same-size saves within one second. The next eligible pass renders current first-plate
+  geometry even if the embedded image is old, then notifies Finder. Failed or missing previews are retried.
 - macOS shows *Background item added*. You can switch it off in **System Settings › General › Login
   Items** or with `3dSlicerRouter --background off`. The first time it reads files in Desktop,
   Documents, Downloads or an external drive, macOS may ask you to allow it.
@@ -107,19 +118,27 @@ Big projects take seconds to render. Turn on the indexer and they are ready befo
 
 | Situation | Result |
 |---|---|
-| First open | Slicer mapped to the file's printer; unknown printer asks once |
+| First open | Explicit printer mapping; otherwise Bambu Studio for Bambu Lab, official OrcaSlicer for other printers |
 | Same file, same printer | Where it opened last time, manual choices included |
 | Printer changed within the brand (A1 → A1 mini) | Same slicer, no question |
 | Printer changed to Bambu Lab (U1 → A1) | Bambu Studio, no question |
 | Printer changed to another brand (A1 → U1) | Asks, with the mapped slicer first |
-| No printer in the file | Optional local classifier, otherwise asks |
+| No printer in the file | Remembered manual choice; otherwise asks among installed slicers |
+| Assigned slicer was uninstalled | Asks among the remaining installed slicers |
 | ⌥ held while opening | Always asks |
-| File already open in a slicer | Switch to it, reload from disk or open another copy |
+| File already open in a slicer | Switch to it, restart and reload, or open another copy |
 
 The decision is stored in a local SQLite index and on the file as an extended attribute
 (`com.moraesdev.slicer-router`). Slicers replace the file when they save, which drops the attribute;
 the router then finds the decision by path and stamps it again. **The file's contents are never
 modified by the router.**
+
+Each choice stores the app's bundle ID, path and name. Official OrcaSlicer
+(`com.orcaslicer.OrcaSlicer`, `/Applications/OrcaSlicer.app`) and Snapmaker Orca
+(`com.snapmaker.snapmaker-orca`, `/Applications/Snapmaker Orca.app`) are separate choices.
+Existing file choices and explicit printer mappings keep priority over the new default.
+The recorded installation path is preferred when it still has the matching bundle ID.
+Opening a file directly in another slicer does not update the router's choice.
 
 > Why not the `Application` field? Snapmaker Orca also writes `BambuStudio-…` there. The printer comes
 > from `Metadata/project_settings.config` → `printer_model`.
@@ -136,8 +155,12 @@ alias 3dSlicerRouter=/Applications/3dSlicerRouter.app/Contents/MacOS/3dSlicerRou
 3dSlicerRouter --set-default
 ```
 
-Prefer a download? Grab the zip from [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases).
+Prebuilt packages, when available, are listed under [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases).
+Local builds use an ad-hoc signature. Developer ID signing and notarization are not provided by this build script.
 Dependencies, update and **uninstall**: [docs/INSTALL.md](docs/INSTALL.md).
+
+If Xcode's build service stalls, `./scripts/build.sh --native --test` builds the same universal app and
+runs the full test suite using `swiftc` and `xctest`. It still requires Xcode's SDK and command-line tools.
 
 ## Try it
 
@@ -145,8 +168,8 @@ Seven small synthetic projects in [`samples/`](samples/) cover every path:
 
 ```sh
 open samples/bambu-a1-keychain-tray.3mf        # Bambu Studio
-open samples/snapmaker-u1-four-colors.3mf      # Snapmaker Orca
-open samples/unknown-printer-prusa-mk4s.3mf    # asks once
+open samples/snapmaker-u1-four-colors.3mf      # OrcaSlicer
+open samples/no-printer-declared.3mf          # choose an installed slicer
 3dSlicerRouter --inspect samples/*.3mf         # see every decision, opens nothing
 ```
 
@@ -157,10 +180,11 @@ open samples/unknown-printer-prusa-mk4s.3mf    # asks once
 
 | Command | What it does |
 |---|---|
-| `--inspect file.3mf…` | Printer, thumbnail, memory and decision, without opening or writing anything |
+| `--inspect file.3mf…` | Printer, thumbnail, remembered choice and decision; does not open a slicer or change the 3MF |
 | `--map "<printer>" /Applications/App.app` | Send that printer to any slicer |
 | `--mappings` | List brand defaults and your mappings |
-| `--render file.3mf\|file.gcode out.png [px]` | Isometric preview as PNG |
+| `--list-slicers` | List installed slicers and their paths |
+| `--render file.3mf\|file.gcode out.png [px]` | First plate of a 3MF, or G-code toolpath, as PNG |
 | `--background on\|off\|status` | Background preview indexer |
 | `--index [--limit N]` | Index and render now, ignoring the idle rule |
 | `--index-status` | Indexer state, catalog totals, log path |
@@ -168,36 +192,58 @@ open samples/unknown-printer-prusa-mk4s.3mf    # asks once
 | `--forget file.3mf…` | Erase the router's memory for these files |
 | `--set-default` | Make the router the default app for `.3mf` |
 
-## Files with no printer (optional)
+## Files with no printer
 
-Some 3MF files carry no slicer metadata at all. For those the router can ask a local decision
-model (for example LAYA) through any server that speaks the `/v1/systemone` typed-choice API and
-returns probabilities. It opens directly only at 75 % confidence or more; otherwise it asks you with
-its guess first. If nothing is listening on `http://127.0.0.1:8100/v1/systemone`, it simply asks.
+Files without printer metadata ask which slicer to use. The picker checks `/Applications`,
+`~/Applications`, their subfolders and macOS registrations for the three main slicers. Only apps
+with an existing executable are listed, including PrusaSlicer and other recognized slicers when
+installed. Removed apps and broken symlinks are excluded.
 
-```sh
-defaults write com.moraesdev.3dslicerrouter LayaEndpoint off    # or another URL
-```
+Remembered manual choices still apply to their files. Old automatic OrcaSlicer fallbacks for
+files without a printer ask again. All routing runs locally.
+3dSlicerRouter remains the default application for `.3mf` files.
+
+<p align="center">
+<img src="docs/images/installed-slicers-after.png" width="294" alt="Native picker for a synthetic 3MF, showing OrcaSlicer, Bambu Studio and Snapmaker Orca installed on the test Mac">
+</p>
+
+*Native picker with a synthetic sample. The list reflects the slicers installed on the test Mac.*
+
+## Local rendering and privacy
+
+Thumbnails are rendered from the file's geometry and filament colours with SceneKit and Metal.
+Camera and lighting are fixed by code. No AI model is involved. In repeated local checks, the same
+synthetic input produced identical PNG hashes; identical pixels across different macOS/GPU versions
+are not guaranteed.
+
+The app keeps routing choices, a catalog and preview images in the user's Application Support
+folder. The optional indexer only reads files visible to Spotlight and permitted by macOS.
+There is no network client or credential configuration in the application.
 
 ## FAQ
 
 **Does it touch my files?** Only an extended attribute with the decision. The 3MF contents stay
 byte-for-byte the same.
 
-**Does the preview update after I edit the project?** Yes. Finder caches thumbnails by modification
-date, so the next save in the slicer refreshes the preview. Closing without saving changes nothing.
+**Does the preview update after I edit the project?** A save invalidates the generated preview. Finder's
+next request renders current first-plate geometry if no indexed image is ready; the optional indexer
+prepares it during its next idle pass. Only the error/large-project fallback can retain an old slicer
+screenshot. Closing without saving changes nothing.
 
-**Does it need special permissions?** No. No Accessibility, Screen Recording or Full Disk Access.
-macOS hands it only the file you opened.
+**Does it need special permissions?** Opening a file and generating its preview do not require
+Accessibility, Screen Recording or Full Disk Access. The optional background indexer may need your
+approval for background activity and access to protected folders.
 
-**Does it phone home?** No. The only network call is the optional classifier on `localhost`.
+**Does it phone home?** No. Routing and previews run entirely on your Mac. No network service,
+AI model, API key or account is required.
 
 **Does it run in the background?** Only if you turn on the indexer, and then only while the Mac is idle
 and plugged in.
 
 ## Roadmap
 
-- [ ] Built-in defaults for OrcaSlicer, PrusaSlicer, Elegoo Slicer and Creality Print (today: *Other app…* or `--map`)
+- [x] Official OrcaSlicer default, separate from Snapmaker Orca
+- [ ] Built-in presets for PrusaSlicer, Elegoo Slicer and Creality Print (today: *Other app…* or `--map`)
 - [ ] Settings window for printer → slicer mappings
 - [ ] Extrusion-width ribbons in the G-code preview
 - [ ] Notarized release

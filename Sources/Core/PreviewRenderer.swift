@@ -6,6 +6,8 @@ import simd
 /// Preview da mesa: fundo #E8E6E1, mesa clara com contorno escuro, vista isométrica.
 /// Uma mesa → enquadra a mesa; várias → vista panorâmica de todas.
 public enum PreviewRenderer {
+    /// Shared with the idle indexer: very large compressed projects use the saved first-plate fallback.
+    public static let maxRenderBytes = 250_000_000
     /// Cena pronta para render ou para um `SCNView` interativo; `target` é o centro do enquadramento.
     public struct Prepared {
         public let scene: SCNScene
@@ -24,7 +26,29 @@ public enum PreviewRenderer {
     """
 
     public static func png(url: URL, info: ThreeMFInfo, size: CGSize = CGSize(width: 1024, height: 1024)) throws -> Data {
-        try encode(render(url: url, info: info, size: size))
+        try encode(render(url: url, info: info, size: size, firstPlateOnly: true))
+    }
+
+    public static func thumbnail(url: URL, info: ThreeMFInfo, size: CGSize,
+                                 cacheDirectory: URL = PreviewCache.directory) throws -> CGImage {
+        if let cached = PreviewCache.cachedURL(for: url, directory: cacheDirectory)
+            .flatMap({ try? Data(contentsOf: $0) }).flatMap(decode) { return cached }
+        let zip = try ZipArchive(url: url)
+        do {
+            let bytes = try URL(fileURLWithPath: url.path).resourceValues(forKeys: [.fileSizeKey]).fileSize ?? .max
+            guard bytes <= maxRenderBytes else { throw RenderError.tooLarge }
+            // Quick Look can retain this result until the next save. Never seed its cache
+            // with an old slicer screenshot when current first-plate geometry can render.
+            return try render(url: url, info: info, size: size, firstPlateOnly: true)
+        } catch {
+            if let embedded = info.embeddedThumbnail.flatMap({ try? zip.read($0) }).flatMap(decode) { return embedded }
+            throw error
+        }
+    }
+
+    static func decode(_ data: Data) -> CGImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }
 
     public static func encode(_ image: CGImage) throws -> Data {
@@ -34,8 +58,10 @@ public enum PreviewRenderer {
         return png
     }
 
-    public static func render(url: URL, info: ThreeMFInfo, size: CGSize) throws -> CGImage {
-        try render(scene: PrintScene.load(url: url, info: info), info: info, size: size)
+    public static func render(url: URL, info: ThreeMFInfo, size: CGSize, firstPlateOnly: Bool = false) throws -> CGImage {
+        var label = info
+        if firstPlateOnly { label.plateCount = 1 }
+        return try render(scene: PrintScene.load(url: url, info: info, firstPlateOnly: firstPlateOnly), info: label, size: size)
     }
 
     /// Caminho de extrusão de um G-code, no mesmo estilo de mesa.
@@ -218,7 +244,7 @@ public enum PreviewRenderer {
     }
 }
 
-public enum RenderError: Error { case noMetal, encode }
+public enum RenderError: Error { case noMetal, encode, tooLarge }
 
 extension NSColor {
     convenience init(hex: String) {

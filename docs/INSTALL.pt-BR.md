@@ -2,117 +2,111 @@
 
 [English](INSTALL.md)
 
-## Dependências
+## Requisitos
 
-| | O quê | Para |
-|---|---|---|
-| **Para rodar** | macOS 14 Sonoma ou mais novo (Apple silicon ou Intel) | executar o app |
-| | [Bambu Studio](https://bambulab.com/en/download/studio) e/ou [Snapmaker Orca](https://www.snapmaker.com/) em `/Applications` | os fatiadores de destino |
-| | *(opcional)* um [classificador LAYA](../README.pt-BR.md#arquivos-sem-impressora-opcional) local | arquivos sem impressora declarada |
-| **Para compilar** | Xcode 15 ou mais novo (só o Command Line Tools não basta) | compilar |
-| | [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen` | gerar o projeto Xcode |
-| *Opcional* | [duti](https://github.com/moretension/duti): `brew install duti` | trocar o app padrão pelo terminal |
-| | Python 3 | só para regerar `samples/` |
+- macOS 14 ou mais novo, em Apple silicon ou Intel.
+- Pelo menos um fatiador instalado que abra arquivos 3MF, como OrcaSlicer, Bambu Studio ou Snapmaker Orca.
+- Para compilar: Xcode 15 ou mais novo, suas ferramentas de linha de comando e [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
-**Nenhuma biblioteca de terceiros.** Leitura de zip, SQLite, render em SceneKit, Quick Look e
-LaunchServices são todos do próprio macOS.
+O app usa frameworks nativos do macOS. Não exige dependência de package manager em execução, serviço de rede, modelo de IA, conta nem API key.
 
-**Permissões:** nenhuma. O app não pede Acessibilidade, Gravação de Tela nem Acesso Total ao Disco.
-O macOS entrega a ele só o arquivo em que você clicou. O preview da mesa é renderizado fora da tela e
-não é screenshot de janela nenhuma.
-
-## Opção A: compilar do código (recomendado)
+## Compilar a partir do código
 
 ```sh
 brew install xcodegen
 git clone https://github.com/MoraesGil/3dSlicerRouter.git
 cd 3dSlicerRouter
-./scripts/build.sh --install
-/Applications/3dSlicerRouter.app/Contents/MacOS/3dSlicerRouter --set-default
+./scripts/build.sh --test --install
 ```
 
-O `build.sh --install`:
+O script gera um app universal em Release. Ele assina o helper e as extensões antes do app principal, verifica as assinaturas e os entitlements das extensões e instala em `/Applications/3dSlicerRouter.app`.
 
-1. gera o `SlicerRouter.xcodeproj` e compila em Release com assinatura ad hoc;
-2. copia o app para `/Applications/3dSlicerRouter.app` e registra no LaunchServices;
-3. registra as duas extensões do Quick Look (thumbnail e preview);
-4. abre o app uma vez em background (`--version`), porque o macOS só ativa as extensões de um app
-   assinado ad hoc depois da primeira execução.
-
-O `--set-default` torna o router o app padrão de `.3mf`. Pelo Finder dá no mesmo: selecione um `.3mf`
-→ **Obter Informações** → **Abrir com: 3dSlicerRouter** → **Alterar Tudo…**.
-
-### Conferir
+Se o serviço de build do Xcode estiver indisponível, use as mesmas fontes e o mesmo SDK pelo backend CLI nativo:
 
 ```sh
-/Applications/3dSlicerRouter.app/Contents/MacOS/3dSlicerRouter --inspect samples/*.3mf
-duti -x 3mf                     # deve mostrar 3dSlicerRouter
+./scripts/build.sh --native --test --install
 ```
 
-O Finder pode segurar thumbnails antigas no cache por um tempo. `qlmanage -r cache` e reabrir o Finder
-(⌥ + clique direito no ícone do Finder no Dock → *Reabrir*) atualizam.
+Os dois backends exigem Xcode. O backend nativo usa `swiftc`, `lipo` e `xctest`; não instala outra toolchain.
 
-## Opção B: download pronto
+Para usar o terminal, adicione este alias à configuração do shell:
 
-1. Baixe `3dSlicerRouter.zip` em [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases).
-2. Descompacte e arraste **3dSlicerRouter.app** para **/Applications**.
-3. O build é assinado ad hoc, sem notarização. Remova a quarentena do download uma vez:
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/3dSlicerRouter.app
-   ```
-4. Abra o app uma vez pelo `/Applications`. Uma janelinha explica o que ele faz; clique em
-   **Tornar padrão para .3mf**.
+```sh
+alias 3dSlicerRouter=/Applications/3dSlicerRouter.app/Contents/MacOS/3dSlicerRouter
+```
+
+## Primeira execução e autorizações
+
+1. Abra **3dSlicerRouter** em Aplicativos. Escolha **Tornar padrão para .3mf**. O Router permanece como padrão; cada arquivo pode abrir em um fatiador diferente.
+2. As thumbnails e o Quick Look usam as duas extensões do app. Se o macOS as desativou, confira **Ajustes do Sistema → Geral → Itens de Início de Sessão e Extensões → Quick Look**. Os nomes podem variar entre versões do macOS.
+3. A preparação de previews em background é opcional. Ative-a com `3dSlicerRouter --background on`. Se houver aprovação pendente, o app abre o painel nativo de Itens de Início para você autorizar.
+
+Abrir um arquivo selecionado e renderizar seu preview não exige Acessibilidade nem Gravação de Tela. O indexador opcional pode provocar pedidos do macOS para pastas protegidas ou volumes removíveis. Registro autorizado e execução correta do worker são estados diferentes. Use `--index-status` e o log local para investigar falhas.
+
+## Assinatura e downloads
+
+O build padrão usa **assinatura ad-hoc**. Ele não tem assinatura Developer ID nem notarização. Uma assinatura local válida não comprova que o Gatekeeper aceitará um arquivo baixado em outro Mac.
+
+Pacotes prontos, quando disponíveis, ficam em [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases). Confira a versão e a origem antes de executar. Compilar localmente é o caminho suportado enquanto a distribuição notarizada permanece no roadmap. Não desative o Gatekeeper nem a segurança do sistema para instalar este app.
+
+## Conferir a instalação
+
+```sh
+3dSlicerRouter --version
+3dSlicerRouter --list-slicers
+3dSlicerRouter --inspect samples/*.3mf
+codesign --verify --deep --strict /Applications/3dSlicerRouter.app
+```
+
+A lista usa instalações válidas. Apps removidos, links quebrados e registros antigos do LaunchServices não viram botões do seletor. O sample sem impressora pergunta qual fatiador instalado deve ser usado.
+
+Confira a associação no Finder: selecione um `.3mf` → **Obter Informações** → **Abrir com**. O app deve ser **3dSlicerRouter**. Também é possível configurar pelo CLI com `3dSlicerRouter --set-default`.
+
+
+### Limitação do helper ad-hoc
+
+A execução automática do indexador ainda é experimental em builds ad-hoc. O macOS pode rejeitar o
+lançamento com `EX_CONFIG` (78) ou `Launch Constraint Violation` mesmo quando o registro aparece
+habilitado. A validação local observou esse caso; não há correção baseada em desativar a segurança.
+Os previews sob demanda continuam disponíveis. Use `--render` ou `--index` em foreground se necessário.
 
 ## Atualizar
 
 ```sh
-cd 3dSlicerRouter && git pull && ./scripts/build.sh --install
+git pull --ff-only
+./scripts/build.sh --test --install
 ```
 
-Os mapeamentos e a memória dos arquivos são mantidos.
+O instalador preserva o estado habilitado do indexador opcional e registra as extensões atualizadas. Os mapeamentos e as escolhas por arquivo permanecem nos dados do usuário. Confira qualquer autorização que o macOS pedir após a atualização.
 
 ## Desinstalar
 
 ```sh
-./scripts/uninstall.sh                                # remove app + dados e devolve o .3mf ao Bambu Studio
-./scripts/uninstall.sh com.snapmaker.snapmaker-orca   # …ou devolve para outro app
-./scripts/uninstall.sh --purge-xattrs ~/Downloads     # e também limpa a memória dos arquivos dessa pasta
+./scripts/uninstall.sh
 ```
 
-O que o script faz, se preferir fazer à mão:
+O script remove o app, encerra seu agente opcional, apaga catálogo, cache e logs locais e associa `.3mf` ao Bambu Studio quando `duti` estiver disponível. Para escolher outro substituto instalado:
 
-0. **Desligar o indexador em background** (se ligou): `3dSlicerRouter --background off`.
-1. **Remover o app e as extensões do Quick Look.**
-   ```sh
-   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u /Applications/3dSlicerRouter.app
-   rm -rf /Applications/3dSlicerRouter.app
-   ```
-2. **Devolver o `.3mf` a um fatiador, depois de remover o app** (é o app que declara o tipo `org.3mf.3mf`):
-   `duti -s com.bambulab.bambu-studio .3mf all`, ou no Finder: **Obter Informações** → **Abrir com**
-   → escolha o fatiador → **Alterar Tudo…**.
-3. **Apagar os dados.**
-   ```sh
-   rm -rf ~/Library/Application\ Support/3dSlicerRouter      # índice SQLite, catálogo e previews
-   rm -rf ~/Library/Logs/3dSlicerRouter                      # log do indexador
-   defaults delete com.moraesdev.3dslicerrouter 2>/dev/null # configurações (endpoint LAYA)
-   qlmanage -r cache                                        # limpa thumbnails em cache
-   ```
-4. *(Opcional)* **Remover a memória dos arquivos.** Cada arquivo roteado leva o atributo estendido
-   `com.moraesdev.slicer-router`. É metadado inofensivo, mas dá para limpar:
-   ```sh
-   find ~/Downloads -name '*.3mf' -exec xattr -d com.moraesdev.slicer-router {} \; 2>/dev/null
-   ```
+```sh
+./scripts/uninstall.sh com.orcaslicer.OrcaSlicer
+```
 
-Nada mais é instalado. O único item de segundo plano é o indexador opcional, que fica dentro do app e
-some junto com ele; não há extensões de kernel nem de sistema.
+Sem `duti`, escolha o substituto no Finder em **Obter Informações → Abrir com → Alterar Tudo…**. Nenhuma configuração de impressora ou fatiador é apagada.
 
-## Problemas comuns
+Os atributos de roteamento dos arquivos são metadados e permanecem por padrão. Para removê-los explicitamente de uma pasta:
 
-| Sintoma | Solução |
+```sh
+./scripts/uninstall.sh --purge-xattrs /caminho/da/pasta-de-3mf
+```
+
+## Solução de problemas
+
+| Sintoma | Conferência |
 |---|---|
-| Dois cliques ainda abrem um fatiador direto | O arquivo tem *Sempre abrir com* do Finder: `xattr -d com.apple.LaunchServices.OpenWith arq.3mf` |
-| Sem thumbnails ou previews | Abra o app uma vez (`open -a 3dSlicerRouter --args --version`) e rode `qlmanage -r cache` |
-| `--set-default` aponta para uma pasta de build | As cópias de build têm o mesmo bundle id. Rode `./scripts/build.sh --install` de novo; ele as desregistra |
-| "App danificado" / não abre (download) | `xattr -dr com.apple.quarantine /Applications/3dSlicerRouter.app` |
-| Um arquivo continua indo para o fatiador errado | `3dSlicerRouter --forget arq.3mf`, ou segure ⌥ ao abrir para escolher de novo |
-| Testar thumbnail pelo terminal trava | O `qlmanage -t` não é confiável com extensões modernas. Veja no Finder ou use `QLThumbnailGenerator` |
+| Dois cliques ignoram o Router | Pode haver uma escolha **Sempre abrir com** específica do arquivo no Finder. Confira em Obter Informações. |
+| Thumbnail antiga | Salve o projeto, confira as extensões Quick Look e solicite o preview novamente. A imagem embutida de fallback pode estar antiga. |
+| Abre no fatiador errado | Segure Option ao abrir e escolha novamente, ou use `--forget arq.3mf`. |
+| Background habilitado, mas sem renders | Confira ociosidade, energia, execução do job e `~/Library/Logs/3dSlicerRouter/indexer.log`. Registro habilitado não comprova uma execução concluída. |
+| Projeto grande mostra somente o preview salvo | Projetos comprimidos acima de 250 MB usam o fallback da primeira chapa embutida. |
+
+Ao abrir uma issue, informe versão do macOS, versão do app e a saída sanitizada de `--inspect`. Não anexe credenciais, modelos de clientes nem caminhos privados.

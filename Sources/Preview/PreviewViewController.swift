@@ -21,9 +21,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 }
                 let info = try ThreeMF.info(url: url)
                 if info.plateCount > 1 {
-                    let image = try PreviewCache.cachedURL(for: url).flatMap { try? Data(contentsOf: $0) }
-                        .flatMap { NSBitmapImageRep(data: $0)?.cgImage }
-                        ?? PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1600, height: 1600))
+                    // The indexer's cache is intentionally first-plate-only; Space keeps its panorama.
+                    let image = try PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1600, height: 1600))
                     DispatchQueue.main.async { self.show(image: image); handler(nil) }
                 } else {
                     let prepared = try PreviewRenderer.prepare(url: url, info: info, aspect: aspect)

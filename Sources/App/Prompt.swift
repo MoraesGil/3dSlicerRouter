@@ -15,13 +15,13 @@ enum Prompt {
         case let .unknownPrinter(m): alert.informativeText = L10n.reasonUnknown(m)
         case let .printerChanged(from, to): alert.informativeText = L10n.reasonChanged(from ?? L10n.notDeclared, to)
         case .noPrinter: alert.informativeText = L10n.reasonNoPrinter
+        case let .appUnavailable(name): alert.informativeText = L10n.reasonUnavailable(name)
         }
         if let png = info.embeddedThumbnail.flatMap({ try? ZipArchive(url: url).read($0) }), let image = NSImage(data: png) {
             alert.icon = image
         }
 
-        var apps = SlicerApp.known
-        if let s = suggested { apps.removeAll { $0 == s }; apps.insert(s, at: 0) }
+        let apps = SlicerApp.installed(suggested: suggested)
         for app in apps { alert.addButton(withTitle: app.name) }
         alert.addButton(withTitle: L10n.otherApp)
         alert.addButton(withTitle: L10n.cancel)
@@ -36,7 +36,7 @@ enum Prompt {
 
         let response = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
         let remember = checkbox?.state == .on
-        if response < apps.count { return Choice(app: apps[response], remember: remember) }
+        if apps.indices.contains(response) { return Choice(app: apps[response], remember: remember) }
         if response == apps.count, let other = pickApplication() { return Choice(app: other, remember: remember) }
         return nil
     }

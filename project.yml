@@ -10,8 +10,8 @@ settings:
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: ""
     ENABLE_HARDENED_RUNTIME: NO
-    MARKETING_VERSION: "1.3.0"
-    CURRENT_PROJECT_VERSION: "4"
+    MARKETING_VERSION: "1.4.0"
+    CURRENT_PROJECT_VERSION: "14"
 targets:
   SlicerRouter:
     type: application
@@ -19,7 +19,7 @@ targets:
     sources:
       - Sources/Core
       - Sources/App
-      - path: Resources/LaunchAgents/com.moraesdev.3dslicerrouter.indexer.plist
+      - path: Resources/LaunchAgents/com.moraesdev.3dslicerrouter.previews.v2.plist
         buildPhase:
           copyFiles:
             destination: wrapper
@@ -57,12 +57,31 @@ targets:
         PRODUCT_MODULE_NAME: SlicerRouter
         PRODUCT_BUNDLE_IDENTIFIER: com.moraesdev.3dslicerrouter
     dependencies:
+      - target: SlicerRouterIndexer
+        embed: true
+        codeSign: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
       - target: SlicerRouterThumbnail
         embed: true
         codeSign: true
       - target: SlicerRouterPreview
         embed: true
         codeSign: true
+  SlicerRouterIndexer:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/Core
+      - Sources/App/Store.swift
+      - Sources/App/Indexer.swift
+      - Sources/Indexer
+    settings:
+      base:
+        PRODUCT_NAME: 3dSlicerIndexer
+        PRODUCT_MODULE_NAME: SlicerRouterIndexer
+        SKIP_INSTALL: YES
   SlicerRouterThumbnail:
     type: app-extension
     platform: macOS
@@ -92,6 +111,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moraesdev.3dslicerrouter.thumbnail
         PRODUCT_MODULE_NAME: SlicerRouterThumbnail
+        CODE_SIGN_ENTITLEMENTS: Sources/Thumbnail/Thumbnail.entitlements
   SlicerRouterPreview:
     type: app-extension
     platform: macOS
@@ -122,11 +142,14 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moraesdev.3dslicerrouter.preview
         PRODUCT_MODULE_NAME: SlicerRouterPreview
+        CODE_SIGN_ENTITLEMENTS: Sources/Preview/Preview.entitlements
   SlicerRouterTests:
     type: bundle.unit-test
     platform: macOS
     sources:
       - Sources/Core
+      - Sources/App/Store.swift
+      - Sources/App/Indexer.swift
       - Tests
     settings:
       base:

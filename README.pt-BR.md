@@ -5,7 +5,7 @@
 ### Cada `.3mf` abre no fatiador certo, sozinho.
 
 Dê dois cliques num 3MF no Mac. O 3dSlicerRouter lê a impressora salva dentro do arquivo e abre o
-**Bambu Studio**, o **Snapmaker Orca** ou o fatiador que você escolher.
+**Bambu Studio**, o **OrcaSlicer**, o **Snapmaker Orca** ou o fatiador que você escolher.
 
 [![CI](https://github.com/MoraesGil/3dSlicerRouter/actions/workflows/ci.yml/badge.svg)](https://github.com/MoraesGil/3dSlicerRouter/actions/workflows/ci.yml)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
@@ -13,7 +13,7 @@ Dê dois cliques num 3MF no Mac. O 3dSlicerRouter lê a impressora salva dentro 
 ![Dependências](https://img.shields.io/badge/depend%C3%AAncias-0-brightgreen)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
 
-<img src="docs/images/routing.svg" width="100%" alt="Animação: um projeto Bambu Lab A1 abre no Bambu Studio e um projeto Snapmaker U1 abre no Snapmaker Orca, porque o router lê o printer_model de cada arquivo">
+<img src="docs/images/routing.svg" width="100%" alt="Animação: um projeto Bambu Lab A1 abre no Bambu Studio e um projeto Snapmaker U1 abre no OrcaSlicer, porque o router lê o printer_model de cada arquivo">
 
 [Instalar](docs/INSTALL.pt-BR.md) · [Testar com os samples](samples/) · [Como decide](#como-decide) · [English](README.md)
 
@@ -26,21 +26,23 @@ padrão para essa extensão. Com impressoras de duas marcas, você acaba abrindo
 Bambu Studio (ou um da A1 no Orca) e ganha aviso de preset, filamento faltando ou tipo de mesa trocado
 sem perceber.
 
-O 3dSlicerRouter vira o app padrão de `.3mf` e sai do caminho. Ele não tem janela: lê o `printer_model`
-do projeto e entrega o arquivo ao fatiador dessa impressora.
+O 3dSlicerRouter vira o app padrão de `.3mf` e sai do caminho. Ele lê o `printer_model` do projeto e entrega o arquivo ao fatiador configurado.
+Sem essa informação, pergunta qual fatiador instalado você quer usar.
 
 ## Qualquer impressora, qualquer fatiador
 
 | | Impressora no arquivo | Abre no |
 |:-:|---|---|
 | <img src="docs/images/app-bambu-studio.png" width="40" alt="Bambu Studio"> | `Bambu Lab A1`, `A1 mini`, `P1S`, `X1C`, `H2D`, … | **Bambu Studio** |
-| <img src="docs/images/app-snapmaker-orca.png" width="40" alt="Snapmaker Orca"> | `Snapmaker U1`, `J1`, `Artisan`, … | **Snapmaker Orca** |
-| | Qualquer outra (`Original Prusa MK4S`, `Elegoo Centauri Carbon`, …) | **Você escolhe**, uma vez, e fica lembrado |
+| | `Snapmaker U1`, `J1`, `Artisan`, … | **OrcaSlicer oficial** |
+| | `Prusa`, `Original Prusa`, … | **OrcaSlicer oficial** |
+| | Qualquer outra (`Elegoo Centauri Carbon`, …) | **OrcaSlicer oficial** |
+| | Sem impressora declarada | **Pergunta entre os fatiadores instalados** |
 
-Impressora nova pergunta uma vez: Bambu Studio, Snapmaker Orca ou **Outro app…**, um seletor nativo
-onde vale qualquer fatiador em `/Applications` (OrcaSlicer, PrusaSlicer, Creality Print, Elegoo
-Slicer, Cura). Marque *Usar sempre para esta impressora* e nunca mais será perguntado. Também dá
-para mapear pelo terminal:
+O OrcaSlicer oficial é o padrão para projetos novos de impressoras que não são Bambu. Segure Option
+ao abrir para escolher entre os fatiadores instalados ou **Outro app…**, um seletor nativo
+para os fatiadores em `/Applications`. Marque *Usar sempre para esta impressora* para definir
+uma regra para aquele modelo. Também dá para mapear pelo terminal:
 
 ```sh
 3dSlicerRouter --map "Original Prusa MK4S" /Applications/PrusaSlicer.app
@@ -52,26 +54,26 @@ do Finder continua funcionando, e o próximo duplo clique lê o arquivo de novo.
 
 ## Já está aberto? Nada de segunda janela
 
-O Bambu Studio e o Snapmaker Orca abrem **outra instância** quando você abre um projeto que já está
+O Bambu Studio, o OrcaSlicer e o Snapmaker Orca abrem **outra instância** quando você abre um projeto que já está
 aberto, e você acaba editando o mesmo arquivo em duas janelas. O 3dSlicerRouter confere antes. Se o
 arquivo é o projeto aberto de um fatiador em execução, ele avisa, diz se há alterações não salvas e
 oferece:
 
-- **Ir para o fatiador**: traz exatamente aquela janela para a frente.
-- **Recarregar do disco**: fecha esse projeto do jeito normal (o fatiador pergunta antes de descartar
-  alterações) e reabre o arquivo salvo.
+- **Ir para o fatiador**: ativa a instância do fatiador em execução.
+- **Reiniciar e recarregar**: fecha a instância do fatiador, que pode conter outras janelas. O fatiador
+  pode perguntar sobre alterações não salvas antes de reabrir o arquivo do disco.
 - **Abrir outra cópia**: o comportamento antigo, se você quiser mesmo.
 
 Ele lê as pastas de recuperação que os fatiadores mantêm em `$TMPDIR` enquanto o projeto está
 aberto, então não precisa de permissão extra. `3dSlicerRouter --inspect arq.3mf` mostra o mesmo.
 
-## Veja para onde o arquivo vai antes de abrir
+## Thumbnails do Finder e previews 3D
 
 O router também ensina o Finder a mostrar projetos 3MF:
 
-- **Lista e ícones pequenos** mostram o ícone do fatiador em que o arquivo vai abrir.
-- **Ícones maiores, Galeria e painel de preview** mostram a mesa: a imagem salva pelo fatiador ou,
-  quando o arquivo não tem, uma vista isométrica renderizada da mesa da impressora declarada.
+- **Thumbnails do Finder em todos os tamanhos** mostram a primeira chapa. O render indexado da revisão
+  atual tem prioridade; sem ele, a solicitação renderiza a geometria atual. A imagem salva pelo fatiador
+  só é usada se o render falhar ou o projeto comprimido exceder 250 MB; esse fallback pode estar desatualizado.
 - **Quick Look (Espaço)** em projeto de uma mesa é um 3D para girar e dar zoom. Projetos com várias
   mesas mostram todas lado a lado.
 - **Cores pintadas exatas.** Faces pintadas com o pincel de cor do fatiador são decodificadas triângulo
@@ -87,6 +89,12 @@ O router também ensina o Finder a mostrar projetos 3MF:
 
 ## Previews em background (opcional)
 
+> **Limitação dos builds ad-hoc:** a inicialização em background é experimental. No Mac de teste,
+> o macOS rejeitou algumas inicializações do helper por uma restrição de lançamento, mesmo com
+> registro habilitado e assinatura válida. Roteamento e previews sob demanda não dependem dele.
+> Se o helper não iniciar, use `--render` ou `--index` em foreground. Não desative a segurança do sistema.
+
+
 Projetos grandes levam segundos para renderizar. Ligue o indexador e eles ficam prontos antes de você
 abrir o Finder:
 
@@ -97,8 +105,9 @@ abrir o Finder:
 - Acha todos os `.3mf` e `.gcode` do Mac pelo Spotlight (sem varrer o disco) e mantém um catálogo.
 - Acorda a cada 30 minutos com prioridade de background e **só trabalha na tomada, fora do modo de pouca
   energia, com o Mac frio e você ausente há 3 minutos**. Para assim que você volta.
-- Os previews ficam em `~/Library/Application Support/3dSlicerRouter/previews`. O Finder e o Quick Look
-  leem na hora; editar o arquivo invalida o preview dele.
+- Os previews ficam em `~/Library/Application Support/3dSlicerRouter/previews`. Salvar invalida a imagem
+  gerada, inclusive com o mesmo tamanho dentro do mesmo segundo. A próxima passada elegível renderiza a
+  geometria atual da primeira chapa mesmo com imagem embutida antiga e avisa o Finder. Falhas e caches ausentes são repetidos.
 - O macOS mostra *Item de segundo plano adicionado*. Dá para desligar em **Ajustes do Sistema › Geral ›
   Itens de Início** ou com `3dSlicerRouter --background off`. Na primeira vez que ele ler arquivos da
   Mesa, Documentos, Downloads ou de um disco externo, o macOS pode pedir sua autorização.
@@ -109,19 +118,27 @@ abrir o Finder:
 
 | Situação | Resultado |
 |---|---|
-| Primeira abertura | Fatiador mapeado para a impressora do arquivo; impressora desconhecida pergunta uma vez |
+| Primeira abertura | Regra explícita da impressora; sem regra, Bambu Studio para Bambu Lab e OrcaSlicer oficial para as demais |
 | Mesmo arquivo, mesma impressora | Onde abriu da última vez, inclusive escolha manual |
 | Impressora mudou dentro da marca (A1 → A1 mini) | Mesmo fatiador, sem perguntar |
 | Impressora mudou para Bambu Lab (U1 → A1) | Bambu Studio, sem perguntar |
 | Impressora mudou para outra marca (A1 → U1) | Pergunta, com o fatiador mapeado em primeiro |
-| Arquivo sem impressora | Classificador local opcional; senão, pergunta |
+| Arquivo sem impressora | Escolha manual salva; sem escolha manual, pergunta entre os fatiadores instalados |
+| Fatiador definido foi desinstalado | Pergunta entre os fatiadores ainda instalados |
 | ⌥ segurado ao abrir | Sempre pergunta |
-| Arquivo já aberto num fatiador | Ir para ele, recarregar do disco ou abrir outra cópia |
+| Arquivo já aberto num fatiador | Ir para ele, reiniciar e recarregar ou abrir outra cópia |
 
 A decisão fica num índice SQLite local e no arquivo, como atributo estendido
 (`com.moraesdev.slicer-router`). Os fatiadores substituem o arquivo ao salvar, o que apaga o atributo;
 o router então acha a decisão pelo caminho e grava de novo. **O router nunca altera o conteúdo do
 arquivo.**
+
+Cada escolha registra bundle ID, caminho e nome do aplicativo. O OrcaSlicer oficial
+(`com.orcaslicer.OrcaSlicer`, `/Applications/OrcaSlicer.app`) e o Snapmaker Orca
+(`com.snapmaker.snapmaker-orca`, `/Applications/Snapmaker Orca.app`) são escolhas separadas.
+As escolhas salvas por arquivo e as regras explícitas por impressora têm prioridade sobre o novo padrão.
+O caminho registrado tem prioridade enquanto o aplicativo nele tiver o bundle ID correspondente.
+Abrir o arquivo diretamente em outro slicer não atualiza a escolha do router.
 
 > Por que não o campo `Application`? O Snapmaker Orca também grava `BambuStudio-…` nele. A impressora
 > vem de `Metadata/project_settings.config` → `printer_model`.
@@ -138,8 +155,12 @@ alias 3dSlicerRouter=/Applications/3dSlicerRouter.app/Contents/MacOS/3dSlicerRou
 3dSlicerRouter --set-default
 ```
 
-Prefere baixar pronto? O zip está em [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases).
+Pacotes prontos, quando disponíveis, ficam em [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases).
+O build local usa assinatura ad-hoc. O script não fornece assinatura Developer ID nem notarização.
 Dependências, atualização e **desinstalação**: [docs/INSTALL.pt-BR.md](docs/INSTALL.pt-BR.md).
+
+Se o serviço de build do Xcode travar, `./scripts/build.sh --native --test` gera o mesmo app universal e
+roda a suíte completa com `swiftc` e `xctest`. O SDK e as ferramentas de linha de comando do Xcode continuam necessários.
 
 ## Teste
 
@@ -147,8 +168,8 @@ Sete projetos sintéticos pequenos em [`samples/`](samples/) cobrem todos os cam
 
 ```sh
 open samples/bambu-a1-keychain-tray.3mf        # Bambu Studio
-open samples/snapmaker-u1-four-colors.3mf      # Snapmaker Orca
-open samples/unknown-printer-prusa-mk4s.3mf    # pergunta uma vez
+open samples/snapmaker-u1-four-colors.3mf      # OrcaSlicer
+open samples/no-printer-declared.3mf          # escolher um fatiador instalado
 3dSlicerRouter --inspect samples/*.3mf         # mostra cada decisão, sem abrir nada
 ```
 
@@ -159,9 +180,10 @@ open samples/unknown-printer-prusa-mk4s.3mf    # pergunta uma vez
 
 | Comando | O que faz |
 |---|---|
-| `--inspect arq.3mf…` | Impressora, thumbnail, memória e decisão, sem abrir nem gravar nada |
+| `--inspect arq.3mf…` | Impressora, thumbnail, escolha salva e decisão; não abre fatiador nem altera o 3MF |
 | `--map "<impressora>" /Applications/App.app` | Manda essa impressora para qualquer fatiador |
 | `--mappings` | Lista os padrões por marca e os seus mapeamentos |
+| `--list-slicers` | Lista somente os fatiadores instalados e seus caminhos |
 | `--render arq.3mf\|arq.gcode out.png [px]` | Preview isométrico em PNG |
 | `--background on\|off\|status` | Indexador de previews em background |
 | `--index [--limit N]` | Indexa e renderiza agora, ignorando a regra de ociosidade |
@@ -170,36 +192,56 @@ open samples/unknown-printer-prusa-mk4s.3mf    # pergunta uma vez
 | `--forget arq.3mf…` | Apaga a memória do router nesses arquivos |
 | `--set-default` | Torna o router o app padrão de `.3mf` |
 
-## Arquivos sem impressora (opcional)
+## Arquivos sem impressora
 
-Alguns 3MF não trazem nenhum metadado de fatiador. Para eles, o router pode consultar um modelo de
-decisão local (o LAYA, por exemplo) por qualquer servidor que fale a API de escolha tipada
-`/v1/systemone` e devolva probabilidades. Só abre direto com 75 % de confiança ou mais; abaixo disso
-pergunta, com o palpite em primeiro. Se nada responder em `http://127.0.0.1:8100/v1/systemone`, ele
-simplesmente pergunta.
+Arquivos sem impressora declarada perguntam qual fatiador usar. O seletor verifica instalações
+em `/Applications`, `~/Applications`, suas subpastas e os registros dos três fatiadores principais
+no macOS. Só entram apps com executável presente, incluindo PrusaSlicer e outros fatiadores
+reconhecidos quando instalados. Apps removidos e links quebrados ficam fora da lista.
 
-```sh
-defaults write com.moraesdev.3dslicerrouter LayaEndpoint off    # ou outra URL
-```
+Uma escolha manual salva continua válida para aquele arquivo. Decisões automáticas antigas
+que usavam OrcaSlicer por falta de impressora voltam a perguntar. As regras são executadas localmente. O 3dSlicerRouter continua como app padrão da extensão `.3mf`.
+
+<p align="center">
+<img src="docs/images/installed-slicers-after.png" width="294" alt="Seletor nativo de um 3MF sintético, com OrcaSlicer, Bambu Studio e Snapmaker Orca instalados no Mac de teste">
+</p>
+
+*Seletor nativo com sample sintético. A lista corresponde aos fatiadores instalados no Mac de teste.*
+
+## Renderização local e privacidade
+
+As thumbnails usam a geometria e as cores dos filamentos, renderizadas com SceneKit e Metal.
+Câmera e iluminação são definidas pelo código. Nenhum modelo de IA participa. Em verificações locais,
+o mesmo sample produziu PNGs com hashes iguais. Não há garantia de pixels idênticos entre versões
+de macOS ou GPUs diferentes.
+
+O app mantém escolhas, catálogo e previews na pasta Application Support do usuário. O indexador
+opcional só lê arquivos visíveis ao Spotlight e permitidos pelo macOS. O aplicativo não tem cliente
+de rede nem configuração de credenciais.
 
 ## Perguntas frequentes
 
 **Ele mexe nos meus arquivos?** Só num atributo estendido com a decisão. O conteúdo do 3MF continua
 idêntico, byte a byte.
 
-**O preview atualiza depois que edito o projeto?** Sim. O Finder guarda as thumbnails pela data de
-modificação, então o próximo salvamento no fatiador atualiza o preview. Fechar sem salvar não muda nada.
+**O preview atualiza depois que edito o projeto?** Salvar invalida o preview gerado. Na próxima solicitação,
+o Finder renderiza a geometria atual da primeira chapa se não houver imagem indexada pronta; o indexador
+opcional a prepara na próxima passada ociosa. Apenas o fallback de erro/projeto grande pode manter um
+screenshot antigo do fatiador. Fechar sem salvar não muda nada.
 
-**Precisa de permissão especial?** Não. Nada de Acessibilidade, Gravação de Tela ou Acesso Total ao
-Disco. O macOS entrega a ele só o arquivo que você abriu.
+**Precisa de permissão especial?** Abrir um arquivo e gerar seu preview não exige Acessibilidade,
+Gravação de Tela ou Acesso Total ao Disco. O indexador opcional pode exigir sua aprovação para
+atividade em background e acesso a pastas protegidas.
 
-**Manda dados para algum lugar?** Não. A única chamada de rede é o classificador opcional em `localhost`.
+**Manda dados para algum lugar?** Não. Roteamento e previews são executados no seu Mac.
+Não exigem serviço de rede, modelo de IA, API key nem conta.
 
 **Ele roda em background?** Só se você ligar o indexador, e mesmo assim só com o Mac ocioso e na tomada.
 
 ## Roadmap
 
-- [ ] Padrões prontos para OrcaSlicer, PrusaSlicer, Elegoo Slicer e Creality Print (hoje: *Outro app…* ou `--map`)
+- [x] OrcaSlicer oficial como padrão, separado do Snapmaker Orca
+- [ ] Padrões prontos para PrusaSlicer, Elegoo Slicer e Creality Print (hoje: *Outro app…* ou `--map`)
 - [ ] Janela de configurações para os mapeamentos impressora → fatiador
 - [ ] Largura de extrusão (fitas) no preview de G-code
 - [ ] Release notarizado
