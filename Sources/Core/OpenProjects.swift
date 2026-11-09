@@ -9,13 +9,14 @@ public struct OpenProject: Equatable {
     public let dirty: Bool
 }
 
-/// Bambu Studio e Snapmaker Orca (base OrcaSlicer) gravam, por projeto aberto,
+/// Bambu Studio, OrcaSlicer e Snapmaker Orca gravam, por projeto aberto,
 /// `$TMPDIR/<raiz>/<Dia_Mês_DD>/<HH_MM_SS>#<PID>#<modelId>/` com `origin.txt` (caminho do projeto).
 /// Saída limpa apaga a pasta; sobras de processos mortos são ignoradas pela checagem do PID.
-/// Layout lido do código-fonte das versões 02.07 (Bambu) e 2.3.6 (Snapmaker Orca), não é API pública.
+/// Layout lido do código-fonte das versões 02.07 (Bambu), 2.5 (OrcaSlicer) e 2.3.6 (Snapmaker Orca), não é API pública.
 public enum OpenProjects {
     public static let roots = [
         (folder: "bamboo_model", bundleID: "com.bambulab.bambu-studio"),
+        (folder: "orcaslicer_model", bundleID: "com.orcaslicer.OrcaSlicer"),
         (folder: "snapmaker_orca_model", bundleID: "com.snapmaker.snapmaker-orca"),
     ]
 

@@ -25,16 +25,19 @@ public struct ThreeMFInfo {
         let m = model.trimmingCharacters(in: .whitespaces)
         if m.isEmpty { return nil }
         if m.lowercased().hasPrefix("bambu") { return "Bambu Lab" }
+        if m.lowercased().hasPrefix("prusa") || m.lowercased().hasPrefix("original prusa") { return "Prusa" }
         return String(m.split(separator: " ").first ?? Substring(m))
     }
 
     static let thumbnailCandidates = [
-        "Auxiliaries/.thumbnails/thumbnail_middle.png",
         "Metadata/plate_1.png",
-        "Metadata/thumbnail.png",
-        "Auxiliaries/.thumbnails/thumbnail_3mf.png",
         "Metadata/plate_1_small.png",
         "Metadata/top_1.png",
+    ]
+    static let singlePlateThumbnailCandidates = [
+        "Auxiliaries/.thumbnails/thumbnail_middle.png",
+        "Metadata/thumbnail.png",
+        "Auxiliaries/.thumbnails/thumbnail_3mf.png",
     ]
 }
 
@@ -71,10 +74,11 @@ public enum ThreeMF {
         }
         if let settings = try? zip.read("Metadata/model_settings.config") {
             let text = String(decoding: settings, as: UTF8.self)
-            info.plateCount = max(1, text.components(separatedBy: "<plate>").count - 1)
+            info.plateCount = max(1, ModelSettings(data: settings).plates.count)
             info.objectNames = text.allMatches(#"<object id="[^"]*">\s*<metadata key="name" value="([^"]*)""#)
         }
-        info.embeddedThumbnail = ThreeMFInfo.thumbnailCandidates.first(where: zip.contains)
+        let candidates = ThreeMFInfo.thumbnailCandidates + (info.plateCount == 1 ? ThreeMFInfo.singlePlateThumbnailCandidates : [])
+        info.embeddedThumbnail = candidates.first(where: zip.contains)
         return info
     }
 }

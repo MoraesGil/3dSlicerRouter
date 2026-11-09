@@ -6,10 +6,10 @@ import ServiceManagement
 /// Acha todos os .3mf e .gcode pelo Spotlight, cataloga e pré-renderiza os previews que faltam,
 /// só quando o Mac está na tomada e ocioso. Roda pelo LaunchAgent do app (`--index-agent`).
 enum Indexer {
-    static let agentPlist = "com.moraesdev.3dslicerrouter.indexer.plist"
+    static let agentPlist = "com.moraesdev.3dslicerrouter.previews.v2.plist"
     static let minIdle: TimeInterval = 180
     /// Arquivos maiores que isso são catalogados mas não renderizados (malhas de centenas de MB).
-    static let maxRenderBytes = 250_000_000
+    static let maxRenderBytes = PreviewRenderer.maxRenderBytes
     static let log = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("Logs/3dSlicerRouter/indexer.log")
 
@@ -106,10 +106,12 @@ enum Indexer {
         var printer: String?, plates = 1, embedded = false, preview: String?, rendered = false, error: String?
     }
 
-    static func index(_ url: URL, size: Int, modified: Date) -> Entry {
+    static func index(_ url: URL, size: Int, modified: Date, cacheDirectory: URL = PreviewCache.directory,
+                      readInfo: (URL) throws -> ThreeMFInfo = { try ThreeMF.info(url: $0) }) -> Entry {
         let gcode = url.pathExtension.lowercased() == "gcode"
         var entry = Entry(path: url.path, kind: gcode ? "gcode" : "3mf", size: size, modified: modified)
         do {
+            guard let revision = PreviewCache.name(for: url) else { throw IndexError.changedDuringRender }
             let render: () throws -> CGImage
             if gcode {
                 let meta = try GCode.metadata(url: url)
@@ -117,23 +119,33 @@ enum Indexer {
                 entry.embedded = meta.thumbnail != nil
                 render = { try PreviewRenderer.renderGCode(url: url, info: meta.info, size: CGSize(width: 1024, height: 1024)) }
             } else {
-                let info = try ThreeMF.info(url: url)
+                let info = try readInfo(url)
                 entry.printer = info.printerModel
                 entry.plates = info.plateCount
                 entry.embedded = info.embeddedThumbnail != nil
-                render = { try PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1024, height: 1024)) }
+                render = { try PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1024, height: 1024), firstPlateOnly: true) }
             }
-            if let cached = PreviewCache.cachedURL(for: url) {
+            guard revision == PreviewCache.name(for: url) else { throw IndexError.changedDuringRender }
+            if let cached = PreviewCache.cachedURL(for: url, directory: cacheDirectory) {
                 entry.preview = cached.path
-            } else if !entry.embedded, size <= maxRenderBytes {
-                entry.preview = PreviewCache.store(try PreviewRenderer.encode(render()), for: url)?.path
+            } else if size <= maxRenderBytes, !gcode || !entry.embedded {
+                let png = try PreviewRenderer.encode(render())
+                guard revision == PreviewCache.name(for: url) else { throw IndexError.changedDuringRender }
+                entry.preview = PreviewCache.store(png, for: url, directory: cacheDirectory, expectedName: revision)?.path
                 entry.rendered = entry.preview != nil
+                if !entry.rendered { throw IndexError.cacheWriteFailed }
+                // The .3mf's mtime does not change when its sidecar cache is refreshed.
+                // Ask Finder to request the new representation instead of retaining the embedded fallback.
+                NSWorkspace.shared.noteFileSystemChanged(url.path)
             }
+            guard revision == PreviewCache.name(for: url) else { throw IndexError.changedDuringRender }
         } catch {
             entry.error = "\(error)"
         }
         return entry
     }
+
+    enum IndexError: Error { case changedDuringRender, cacheWriteFailed }
 
     // MARK: agente em background
 

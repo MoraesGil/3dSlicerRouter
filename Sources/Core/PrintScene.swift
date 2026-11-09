@@ -36,12 +36,13 @@ public struct PrintScene {
         }
     }
 
-    public static func load(url: URL, info: ThreeMFInfo) throws -> PrintScene {
+    public static func load(url: URL, info: ThreeMFInfo, firstPlateOnly: Bool = false) throws -> PrintScene {
         let zip = try ZipArchive(url: url)
         var scene = PrintScene()
-        scene.beds = bedLayout(count: info.plateCount, min: info.bedMin, max: info.bedMax)
+        scene.beds = bedLayout(count: firstPlateOnly ? 1 : info.plateCount, min: info.bedMin, max: info.bedMax)
 
         let settings = (try? zip.read("Metadata/model_settings.config")).map(ModelSettings.init) ?? ModelSettings()
+        if firstPlateOnly, info.plateCount > 1, settings.plates.isEmpty { throw PrintSceneError.missingFirstPlate }
         var models: [String: ModelFile] = [:]
         func model(_ path: String) -> ModelFile? {
             if let m = models[path] { return m }
@@ -116,6 +117,8 @@ public struct PrintScene {
             }
         }
         for item in main.build {
+            if firstPlateOnly, let instances = settings.plates.first,
+               !instances.contains(.init(objectID: item.objectID, instanceID: item.instanceID)) { continue }
             emit(path: root, id: item.objectID, transform: item.transform,
                  extruder: settings.objectExtruder[item.objectID] ?? 1, top: item.objectID, depth: 0)
         }
@@ -123,11 +126,15 @@ public struct PrintScene {
     }
 }
 
+public enum PrintSceneError: Error { case missingFirstPlate }
+
 /// `Metadata/model_settings.config` do Bambu/Orca: extrusora por objeto e por peça.
 struct ModelSettings {
+    struct Instance: Hashable { let objectID: String; let instanceID: Int }
     struct Part { var extruder: Int?; var subtype: String? }
     var objectExtruder: [String: Int] = [:]
     var parts: [String: [String: Part]] = [:]
+    var plates: [Set<Instance>] = []
 
     init() {}
 
@@ -138,19 +145,28 @@ struct ModelSettings {
         parser.parse()
         objectExtruder = delegate.objectExtruder
         parts = delegate.parts
+        plates = delegate.plates
     }
 
     private final class Delegate: NSObject, XMLParserDelegate {
         var objectExtruder: [String: Int] = [:]
         var parts: [String: [String: Part]] = [:]
+        var plates: [Set<Instance>] = []
         var object: String?
         var part: String?
         var inPlate = false
+        var inInstance = false
+        var instanceObject: String?
+        var instanceID = 0
 
         func parser(_ p: XMLParser, didStartElement name: String, namespaceURI: String?,
                     qualifiedName: String?, attributes a: [String: String]) {
             switch name {
-            case "plate": inPlate = true
+            case "plate": inPlate = true; plates.append([])
+            case "model_instance" where inPlate: inInstance = true; instanceObject = nil; instanceID = 0
+            case "metadata" where inInstance:
+                if a["key"] == "object_id" { instanceObject = a["value"] }
+                if a["key"] == "instance_id" { instanceID = a["value"].flatMap(Int.init) ?? 0 }
             case "object" where !inPlate: object = a["id"]
             case "part": part = a["id"]
                 if let o = object, let id = part { parts[o, default: [:]][id] = Part(subtype: a["subtype"]) }
@@ -163,6 +179,11 @@ struct ModelSettings {
 
         func parser(_ p: XMLParser, didEndElement name: String, namespaceURI: String?, qualifiedName: String?) {
             switch name {
+            case "model_instance":
+                if let id = instanceObject, !plates.isEmpty {
+                    plates[plates.count - 1].insert(Instance(objectID: id, instanceID: instanceID))
+                }
+                inInstance = false; instanceObject = nil
             case "plate": inPlate = false
             case "part": part = nil
             case "object": object = nil
@@ -183,12 +204,13 @@ final class ModelFile: NSObject, XMLParserDelegate {
     }
     struct Component { let objectID: String; let path: String?; let transform: simd_float4x4 }
     struct Object { var mesh: Mesh?; var components: [Component] = [] }
-    struct Item { let objectID: String; let transform: simd_float4x4 }
+    struct Item { let objectID: String; let instanceID: Int; let transform: simd_float4x4 }
 
     private(set) var objects: [String: Object] = [:]
     private(set) var build: [Item] = []
     private var current: String?
     private var mesh: Mesh?
+    private var instanceCounts: [String: Int] = [:]
 
     init(data: Data) {
         super.init()
@@ -234,8 +256,12 @@ final class ModelFile: NSObject, XMLParserDelegate {
             let path = a.first(where: { $0.key.hasSuffix(":path") || $0.key == "path" })?.value
             objects[id]?.components.append(Component(objectID: ref, path: path, transform: Self.transform(a["transform"])))
         case "item":
-            if let ref = a["objectid"], a["printable"] != "0" {
-                build.append(Item(objectID: ref, transform: Self.transform(a["transform"])))
+            if let ref = a["objectid"] {
+                let instance = instanceCounts[ref, default: 0]
+                instanceCounts[ref] = instance + 1
+                if a["printable"] != "0" {
+                    build.append(Item(objectID: ref, instanceID: instance, transform: Self.transform(a["transform"])))
+                }
             }
         default: break
         }

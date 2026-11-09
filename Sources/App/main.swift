@@ -14,11 +14,12 @@ func describe(_ d: Decision) -> String {
     switch d {
     case let .open(app, reason): return "open \(app.name) (\(reason))"
     case let .ask(why, suggested): return "ask \(why) suggested=\(suggested?.name ?? "-")"
-    case .classify: return "classify (LAYA)"
     }
 }
 
 switch args.first {
+case "--list-slicers":
+    for app in SlicerApp.installed() { print("\(app.name)\t\(app.bundleID)\t\(app.path)") }
 case "--inspect":
     let store = Store()
     for path in args.dropFirst() {
@@ -27,9 +28,6 @@ case "--inspect":
             let info = try ThreeMF.info(url: url)
             let record = store.record(for: url)
             let decision = Router.decide(info: info, record: record, mappings: store.mappings(), optionHeld: false)
-            let laya = decision == .classify
-                ? Laya.classify(info: info, fileName: url.lastPathComponent).map { String(format: "%@ %.0f%%", $0.app.name, $0.probability * 100) } ?? "sem palpite"
-                : "-"
             print("""
             \(url.lastPathComponent)
               printer_model: \(info.printerModel ?? "-")  brand: \(info.brand ?? "-")
@@ -38,7 +36,7 @@ case "--inspect":
               thumbnail:     \(info.embeddedThumbnail ?? "nenhuma (gera preview)")
               record:        \(record.map { "\($0.uuid) \($0.printerModel ?? "-") → \($0.app.name)" } ?? "-")
               decision:      \(describe(decision))
-              laya:          \(laya) (abre direto a partir de \(Int(Laya.minProbability * 100))%)
+              target_app:    \(Router.expectedApp(info: info, record: record, mappings: store.mappings()).map { "\($0.bundleID) → \($0.path)" } ?? "-")
               aberto agora:  \(OpenProjects.find(url, running: RouterApp.process(pid:)).map { "\($0.bundleID) pid \($0.pid)\($0.dirty ? " (alterações não salvas)" : "")" } ?? "não")
             """)
         } catch {
@@ -80,8 +78,13 @@ case "--index":
     let s = Indexer.run(store: Store(), force: true, limit: limit, budget: .infinity)
     print("achados \(s.found), renderizados \(s.rendered), já ok \(s.skipped), erros \(s.failed)")
 case "--index-agent":
-    // Chamado pelo LaunchAgent: só trabalha na tomada e com o Mac ocioso.
-    Indexer.run(store: Store(), force: false)
+    // Bootstrap signed as the host for SMAppService, then replace the process image.
+    // Never render in the Finder handler: LaunchServices would reuse this busy process.
+    let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/3dSlicerIndexer").path
+    var argv = ([helper] + args.dropFirst()).map { strdup($0) } + [nil]
+    execv(helper, &argv)
+    perror("3dSlicerIndexer")
+    exit(1)
 case "--index-status":
     print("background: \(Indexer.statusText())")
     print("agora: \(Indexer.whyNotNow() ?? "pronto para indexar (na tomada e ocioso)")")
@@ -92,12 +95,13 @@ case "--catalog":
 case "--background":
     do {
         switch args.count > 1 ? args[1] : "status" {
-        case "on": try Indexer.service.register()
+        case "on":
+            try Indexer.service.register()
+            if Indexer.service.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
         case "off": try Indexer.service.unregister()
         default: break
         }
         print("background: \(Indexer.statusText())")
-        if Indexer.service.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
     } catch {
         print("erro: \(error.localizedDescription)"); exit(1)
     }

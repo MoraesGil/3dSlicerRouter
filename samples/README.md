@@ -9,10 +9,10 @@ so the slicers import them as plain models.
 | `bambu-a1-keychain-tray.3mf` | Bambu Lab A1 | Bambu Studio | 6 two-colour tags on one plate |
 | `bambu-a1mini-calibration.3mf` | Bambu Lab A1 mini | Bambu Studio | smaller 180 mm bed |
 | `bambu-h2d-four-plates.3mf` | Bambu Lab H2D | Bambu Studio | 4 plates → panoramic preview |
-| `snapmaker-u1-four-colors.3mf` | Snapmaker U1 | Snapmaker Orca | 4 toolheads, 4 colours |
-| `snapmaker-u1-painted-faces.3mf` | Snapmaker U1 | Snapmaker Orca | faces painted with the colour brush (`paint_color`) |
-| `unknown-printer-prusa-mk4s.3mf` | Original Prusa MK4S | asks once | picker + *Always use for this printer* |
-| `no-printer-declared.3mf` | none | classifier or asks | plain 3MF with no slicer metadata |
+| `snapmaker-u1-four-colors.3mf` | Snapmaker U1 | OrcaSlicer | 4 toolheads, 4 colours |
+| `snapmaker-u1-painted-faces.3mf` | Snapmaker U1 | OrcaSlicer | faces painted with the colour brush (`paint_color`) |
+| `unknown-printer-prusa-mk4s.3mf` | Original Prusa MK4S | OrcaSlicer | Prusa default (legacy sample filename) |
+| `no-printer-declared.3mf` | none | Ask among installed slicers | plain 3MF with no slicer metadata |
 
 ```sh
 # what would happen, without opening anything

@@ -16,12 +16,13 @@ Thanks for helping 3D printing on the Mac get a little less annoying.
 
 ```sh
 brew install xcodegen
-xcodegen generate
-xcodebuild -project SlicerRouter.xcodeproj -scheme SlicerRouter test
+./scripts/build.sh --test
 ./scripts/build.sh --install      # try it for real
 ```
 
 - Keep it dependency-free; macOS frameworks only.
 - Routing rules live in one pure function (`Router.decide`). Every new rule gets a unit test.
 - UI strings go through `L10n` (English + Portuguese).
+- Keep routing and preview generation offline; do not add model endpoints or credential settings.
+- Use `./scripts/build.sh --native --test` when the Xcode build service is unavailable.
 - Never commit customer or proprietary models. Generate samples procedurally.

@@ -12,22 +12,25 @@ public enum PreviewCache {
     }()
 
     public static func name(for url: URL) -> String? {
-        guard let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
+        guard let values = try? URL(fileURLWithPath: url.path).resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
               let size = values.fileSize, let modified = values.contentModificationDate else { return nil }
         let path = url.resolvingSymlinksInPath().standardizedFileURL.path
         let digest = SHA256.hash(data: Data(path.utf8)).prefix(16).map { String(format: "%02x", $0) }.joined()
-        return "\(digest)-\(size)-\(Int(modified.timeIntervalSince1970)).png"
+        // Exact Double precision, shared with SQLite; v2 also expires old all-plate previews.
+        let stamp = String(modified.timeIntervalSince1970.bitPattern, radix: 16)
+        return "\(digest)-v2-first-\(size)-\(stamp).png"
     }
 
-    public static func cachedURL(for url: URL) -> URL? {
+    public static func cachedURL(for url: URL, directory: URL = directory) -> URL? {
         guard let name = name(for: url) else { return nil }
         let file = directory.appendingPathComponent(name)
         return FileManager.default.fileExists(atPath: file.path) ? file : nil
     }
 
     @discardableResult
-    public static func store(_ png: Data, for url: URL) -> URL? {
+    public static func store(_ png: Data, for url: URL, directory: URL = directory, expectedName: String? = nil) -> URL? {
         guard let name = name(for: url) else { return nil }
+        guard expectedName == nil || expectedName == name else { return nil }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let file = directory.appendingPathComponent(name)
         // Remove versões antigas do mesmo arquivo (mesmo prefixo de caminho).

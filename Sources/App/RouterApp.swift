@@ -15,9 +15,10 @@ final class RouterApp: NSObject, NSApplicationDelegate {
 
     func application(_ app: NSApplication, open urls: [URL]) {
         handledFiles = true
+        pending += 1
+        defer { pending -= 1; finishWhenIdle() }
         let option = NSEvent.modifierFlags.contains(.option)
         for url in urls { route(url, optionHeld: option) }
-        finishWhenIdle()
     }
 
     // MARK: roteamento
@@ -32,13 +33,8 @@ final class RouterApp: NSObject, NSApplicationDelegate {
         let mappings = store.mappings()
         var decision = Router.decide(info: info, record: record, mappings: mappings, optionHeld: optionHeld)
 
-        if decision == .classify {
-            let guess = Laya.classify(info: info, fileName: url.lastPathComponent)
-            if let guess, guess.probability >= Laya.minProbability {
-                decision = .open(guess.app, reason: String(format: "LAYA %.0f%%", guess.probability * 100))
-            } else {
-                decision = .ask(.noPrinter, suggested: guess?.app)
-            }
+        if case let .open(app, _) = decision, SlicerApp.installedURL(for: app) == nil {
+            decision = .ask(.appUnavailable(app.name), suggested: nil)
         }
 
         let app: SlicerApp, reason: String, override: Bool
@@ -50,24 +46,20 @@ final class RouterApp: NSObject, NSApplicationDelegate {
             app = choice.app; reason = "escolha do dono"
             override = info.printerModel.flatMap(mappings.app(for:)) != choice.app
             if choice.remember, let model = info.printerModel { store.remember(printer: model, app: choice.app) }
-        case .classify:
-            return
         }
 
         guard open(url, with: app) else { return }
         let uuid = record?.uuid ?? UUID().uuidString
         store.save(FileRecord(uuid: uuid, printerModel: info.printerModel, app: app, override: override,
                               settingsHash: info.settingsHash), for: url, reason: reason)
-        // Só o xattr mudou (ex.: escolha com ⌥): pede ao Finder para reler o ícone.
+        // Notify Finder after updating this file's routing metadata.
         NSWorkspace.shared.noteFileSystemChanged(url.path)
     }
 
     @discardableResult
     func open(_ url: URL, with app: SlicerApp) -> Bool {
-        let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID)
-            ?? URL(fileURLWithPath: app.path)
-        guard FileManager.default.fileExists(atPath: appURL.path) else {
-            Prompt.error(L10n.notFound(app.name), detail: appURL.path)
+        guard let appURL = SlicerApp.installedURL(for: app) else {
+            Prompt.error(L10n.notFound(app.name), detail: app.path)
             return false
         }
         pending += 1
