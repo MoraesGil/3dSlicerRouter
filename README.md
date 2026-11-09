@@ -88,6 +88,12 @@ The router also teaches Finder about 3MF projects:
 
 ## Background previews (optional)
 
+> **Ad-hoc build limitation:** background startup is experimental. On the local test Mac, macOS
+> intermittently rejected the helper with a launch constraint violation even when registration was
+> enabled and the signature verified. Routing and on-demand previews do not depend on this helper.
+> If it cannot start, use `--render` or the foreground `--index` command. Do not disable system security.
+
+
 Big projects take seconds to render. Turn on the indexer and they are ready before you open Finder:
 
 ```sh

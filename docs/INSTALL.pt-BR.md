@@ -62,6 +62,14 @@ A lista usa instalações válidas. Apps removidos, links quebrados e registros 
 
 Confira a associação no Finder: selecione um `.3mf` → **Obter Informações** → **Abrir com**. O app deve ser **3dSlicerRouter**. Também é possível configurar pelo CLI com `3dSlicerRouter --set-default`.
 
+
+### Limitação do helper ad-hoc
+
+A execução automática do indexador ainda é experimental em builds ad-hoc. O macOS pode rejeitar o
+lançamento com `EX_CONFIG` (78) ou `Launch Constraint Violation` mesmo quando o registro aparece
+habilitado. A validação local observou esse caso; não há correção baseada em desativar a segurança.
+Os previews sob demanda continuam disponíveis. Use `--render` ou `--index` em foreground se necessário.
+
 ## Atualizar
 
 ```sh

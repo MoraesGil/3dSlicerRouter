@@ -89,6 +89,12 @@ O router também ensina o Finder a mostrar projetos 3MF:
 
 ## Previews em background (opcional)
 
+> **Limitação dos builds ad-hoc:** a inicialização em background é experimental. No Mac de teste,
+> o macOS rejeitou algumas inicializações do helper por uma restrição de lançamento, mesmo com
+> registro habilitado e assinatura válida. Roteamento e previews sob demanda não dependem dele.
+> Se o helper não iniciar, use `--render` ou `--index` em foreground. Não desative a segurança do sistema.
+
+
 Projetos grandes levam segundos para renderizar. Ligue o indexador e eles ficam prontos antes de você
 abrir o Finder:
 

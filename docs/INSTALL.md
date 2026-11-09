@@ -62,6 +62,14 @@ The slicer list is built from valid installations. Removed apps, broken symlinks
 
 To check file association, use Finder: select a `.3mf` → **Get Info** → **Open with**. It should name **3dSlicerRouter**. You can set it from the CLI with `3dSlicerRouter --set-default`.
 
+
+### Ad-hoc helper limitation
+
+Automatic indexer startup remains experimental in ad-hoc builds. macOS may reject a launch with
+`EX_CONFIG` (78) or `Launch Constraint Violation` even when registration appears enabled. This was
+observed locally; disabling system security is not a supported fix. On-demand previews remain
+available. Use `--render` or foreground `--index` when needed.
+
 ## Update
 
 ```sh
