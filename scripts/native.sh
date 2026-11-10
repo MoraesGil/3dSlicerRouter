@@ -59,6 +59,8 @@ PY
       xcrun lipo -create "$OBJECTS/$name-arm64" "$OBJECTS/$name-x86_64" -output "$APP/Contents/PlugIns/SlicerRouter$name.appex/Contents/MacOS/SlicerRouter$name"
     done
     cp Resources/LaunchAgents/com.moraesdev.3dslicerrouter.previews.v2.plist "$APP/Contents/Library/LaunchAgents/"
+    mkdir -p "$APP/Contents/Resources"
+    cp Resources/AppIcon.icns "$APP/Contents/Resources/"
     ;;
   test)
     TEST="$PRODUCTS/SlicerRouterTests.xctest"

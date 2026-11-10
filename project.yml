@@ -19,6 +19,8 @@ targets:
     sources:
       - Sources/Core
       - Sources/App
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
       - path: Resources/LaunchAgents/com.moraesdev.3dslicerrouter.previews.v2.plist
         buildPhase:
           copyFiles:
@@ -29,6 +31,7 @@ targets:
       properties:
         CFBundleName: 3dSlicerRouter
         CFBundleDisplayName: 3dSlicerRouter
+        CFBundleIconFile: AppIcon
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSUIElement: true
