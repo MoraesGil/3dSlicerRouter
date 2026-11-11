@@ -1,11 +1,16 @@
 <div align="center">
 
+<img src="Resources/AppIcon.png" width="112" alt="Ícone do 3dSlicerRouter: modelo em camadas sobre uma mesa com uma seta de roteamento">
+
 # 3dSlicerRouter
 
-### Cada `.3mf` abre no fatiador certo, sozinho.
+### O slicer certo. Sua mesa, à primeira vista.
 
-Dê dois cliques num 3MF no Mac. O 3dSlicerRouter lê a impressora salva dentro do arquivo e abre o
-**Bambu Studio**, o **OrcaSlicer**, o **Snapmaker Orca** ou o fatiador que você escolher.
+**Automatize a abertura no slicer correto.**<br>
+**Veja a mesa antes mesmo de abrir o arquivo.**
+
+Um app nativo do macOS para abrir `.3mf` no slicer certo e mostrar thumbnails no Finder e previews
+no Quick Look. Tudo funciona localmente, sem conta nem serviço de rede.
 
 [![CI](https://github.com/MoraesGil/3dSlicerRouter/actions/workflows/ci.yml/badge.svg)](https://github.com/MoraesGil/3dSlicerRouter/actions/workflows/ci.yml)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
@@ -13,11 +18,38 @@ Dê dois cliques num 3MF no Mac. O 3dSlicerRouter lê a impressora salva dentro 
 ![Dependências](https://img.shields.io/badge/depend%C3%AAncias-0-brightgreen)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
 
-<img src="docs/images/routing.svg" width="100%" alt="Animação: um projeto Bambu Lab A1 abre no Bambu Studio e um projeto Snapmaker U1 abre no OrcaSlicer, porque o router lê o printer_model de cada arquivo">
-
-[Instalar](docs/INSTALL.pt-BR.md) · [Testar com os samples](samples/) · [Como decide](#como-decide) · [English](README.md)
+[Instalar](docs/INSTALL.pt-BR.md) · [Demo do router](#automatize-a-abertura-no-slicer-correto) · [Demo dos previews](#veja-a-mesa-antes-mesmo-de-abrir-o-arquivo) · [English](README.md)
 
 </div>
+
+## Automatize a abertura no slicer correto
+
+Mantenha o 3dSlicerRouter como app padrão de `.3mf`. Dê dois cliques em um projeto: ele lê a impressora
+salva e abre o **Bambu Studio**, o **OrcaSlicer**, o **Snapmaker Orca** ou o slicer escolhido por você.
+O arquivo não tem impressora definida? Ele pergunta qual dos slicers instalados no Mac você quer usar.
+
+<img src="docs/images/routing.svg" width="100%" alt="Demo do router: um projeto Bambu Lab A1 abre no Bambu Studio e um projeto Snapmaker U1 abre no OrcaSlicer">
+
+## Veja a mesa antes mesmo de abrir o arquivo
+
+Encontre o projeto pela geometria e pelas cores, direto no **Finder**. As thumbnails mostram a primeira
+mesa. Selecione um arquivo e pressione **Espaço** para abrir o **Quick Look**: gire e amplie um projeto
+de uma mesa em 3D ou veja todas as mesas juntas em um projeto com várias mesas. Não é preciso abrir o slicer.
+
+| Uma mesa, cores pintadas | Várias mesas, uma visão geral |
+|---|---|
+| <img src="docs/images/preview-snapmaker-u1-painted-faces.png" width="440" alt="Preview gerado de uma mesa Snapmaker U1 com um cubo pintado em quatro cores de filamento"> | <img src="docs/images/preview-bambu-h2d-four-plates.png" width="440" alt="Visão geral gerada para o Quick Look com as quatro mesas de um projeto Bambu Lab H2D"> |
+
+*Previews gerados pelo 3dSlicerRouter com os projetos sintéticos de [samples/](samples/).*
+
+- **Geometria e cores do 3MF:** os previews usam o modelo, as cores dos filamentos e as faces pintadas salvas no projeto.
+- **Previews de G-code:** mostram a thumbnail embutida, quando disponível. Sem ela, o app renderiza o
+  caminho de extrusão na cor do filamento de cada ferramenta. O Quick Look abre esse caminho em 3D.
+- **Render local:** SceneKit e Metal geram os previews no Mac. Não é preciso modelo de IA, API key ou conta.
+
+O Finder usa a thumbnail indexada da revisão atual quando ela existe. Sem ela, renderiza a geometria
+atual da primeira mesa sob demanda. Se o render falhar ou o projeto comprimido exceder 250 MB, usa a
+imagem salva pelo slicer, que pode estar desatualizada. A [indexação em background](#previews-em-background-opcional) é opcional.
 
 ## O problema
 
@@ -66,26 +98,6 @@ oferece:
 
 Ele lê as pastas de recuperação que os fatiadores mantêm em `$TMPDIR` enquanto o projeto está
 aberto, então não precisa de permissão extra. `3dSlicerRouter --inspect arq.3mf` mostra o mesmo.
-
-## Thumbnails do Finder e previews 3D
-
-O router também ensina o Finder a mostrar projetos 3MF:
-
-- **Thumbnails do Finder em todos os tamanhos** mostram a primeira chapa. O render indexado da revisão
-  atual tem prioridade; sem ele, a solicitação renderiza a geometria atual. A imagem salva pelo fatiador
-  só é usada se o render falhar ou o projeto comprimido exceder 250 MB; esse fallback pode estar desatualizado.
-- **Quick Look (Espaço)** em projeto de uma mesa é um 3D para girar e dar zoom. Projetos com várias
-  mesas mostram todas lado a lado.
-- **Cores pintadas exatas.** Faces pintadas com o pincel de cor do fatiador são decodificadas triângulo
-  a triângulo (a mesma árvore de subdivisão que o Bambu Studio e o Orca salvam): modelo de quatro cores
-  aparece com quatro cores.
-- **G-code também.** Arquivos `.gcode` mostram a thumbnail embutida ou, sem ela, o caminho de extrusão
-  desenhado na cor do filamento de cada ferramenta. O Espaço abre em 3D.
-
-<p align="center">
-<img src="docs/images/preview-bambu-h2d-four-plates.png" width="49%" alt="Preview gerado de um projeto Bambu Lab H2D com quatro mesas">
-<img src="docs/images/preview-snapmaker-u1-painted-faces.png" width="49%" alt="Preview gerado de um cubo Snapmaker U1 com faces pintadas em quatro cores de filamento">
-</p>
 
 ## Previews em background (opcional)
 
