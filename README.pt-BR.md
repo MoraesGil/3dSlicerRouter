@@ -18,6 +18,8 @@ no Quick Look. Tudo funciona localmente, sem conta nem serviço de rede.
 ![Dependências](https://img.shields.io/badge/depend%C3%AAncias-0-brightgreen)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
 
+**[Baixar para macOS (.dmg)](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)** · [Todas as versões](https://github.com/MoraesGil/3dSlicerRouter/releases)
+
 [Instalar](docs/INSTALL.pt-BR.md) · [Demo do router](#automatize-a-abertura-no-slicer-correto) · [Demo dos previews](#veja-a-mesa-antes-mesmo-de-abrir-o-arquivo) · [English](README.md)
 
 </div>
@@ -157,6 +159,19 @@ Abrir o arquivo diretamente em outro slicer não atualiza a escolha do router.
 
 ## Instalar
 
+1. **[Baixe 3dSlicerRouter.dmg](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)**. O mesmo app atende Apple silicon e Intel, no macOS 14 ou mais novo.
+2. Abra o DMG e arraste **3dSlicerRouter** para **Applications**. Ejete a imagem de disco.
+3. Abra o app em **Aplicativos** e escolha **Tornar padrão para .3mf**. Mantenha um fatiador instalado.
+
+Você não precisa de Xcode, Homebrew nem Terminal. A Release inclui um ZIP alternativo e hashes SHA-256.
+
+**Autorização na primeira abertura:** o app usa assinatura ad-hoc, sem Developer ID nem notarização.
+O macOS pode bloquear a abertura. Se você confia no download, siga as [instruções da Apple para Abrir Mesmo Assim](https://support.apple.com/102445).
+Macs gerenciados podem impedir essa autorização. Não desative o Gatekeeper nem remova a quarentena.
+
+<details>
+<summary>Compilar a partir do código (desenvolvedores)</summary>
+
 Precisa de macOS 14 ou mais novo e de pelo menos um fatiador.
 
 ```sh
@@ -167,12 +182,13 @@ alias 3dSlicerRouter=/Applications/3dSlicerRouter.app/Contents/MacOS/3dSlicerRou
 3dSlicerRouter --set-default
 ```
 
-Pacotes prontos, quando disponíveis, ficam em [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases).
 O build local usa assinatura ad-hoc. O script não fornece assinatura Developer ID nem notarização.
 Dependências, atualização e **desinstalação**: [docs/INSTALL.pt-BR.md](docs/INSTALL.pt-BR.md).
 
 Se o serviço de build do Xcode travar, `./scripts/build.sh --native --test` gera o mesmo app universal e
 roda a suíte completa com `swiftc` e `xctest`. O SDK e as ferramentas de linha de comando do Xcode continuam necessários.
+
+</details>
 
 ## Teste
 

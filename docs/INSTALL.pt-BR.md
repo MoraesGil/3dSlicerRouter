@@ -10,7 +10,19 @@
 
 O app usa frameworks nativos do macOS. Não exige dependência de package manager em execução, serviço de rede, modelo de IA, conta nem API key.
 
+## Baixar e instalar
+
+1. **[Baixe 3dSlicerRouter.dmg](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)** na [Release mais recente](https://github.com/MoraesGil/3dSlicerRouter/releases/latest). O mesmo app atende Apple silicon e Intel.
+2. Abra o DMG. Arraste **3dSlicerRouter** para **Applications** nessa janela.
+3. Ejete a imagem de disco. Abra **3dSlicerRouter** em **Aplicativos** e escolha **Tornar padrão para .3mf**.
+
+Você não precisa de Xcode, Homebrew, Git nem Terminal. Há também um ZIP: extraia-o e mova o app para Aplicativos. `SHA256SUMS` contém os hashes dos dois downloads.
+
+Esta versão usa **assinatura ad-hoc**, sem Developer ID nem notarização. Se o macOS bloquear a primeira abertura e você confia no download, siga as [instruções da Apple para Abrir Mesmo Assim](https://support.apple.com/102445): tente abrir o app instalado, acesse **Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim** e confirme. Macs gerenciados podem impedir essa autorização. Não desative o Gatekeeper nem remova a quarentena. Confira os limites desta distribuição em [Assinatura e downloads](#assinatura-e-downloads).
+
 ## Compilar a partir do código
+
+Esta seção é para desenvolvedores. Ela não é necessária para instalar o download.
 
 ```sh
 brew install xcodegen
@@ -47,7 +59,7 @@ Abrir um arquivo selecionado e renderizar seu preview não exige Acessibilidade 
 
 O build padrão usa **assinatura ad-hoc**. Ele não tem assinatura Developer ID nem notarização. Uma assinatura local válida não comprova que o Gatekeeper aceitará um arquivo baixado em outro Mac.
 
-Pacotes prontos, quando disponíveis, ficam em [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases). Confira a versão e a origem antes de executar. Compilar localmente é o caminho suportado enquanto a distribuição notarizada permanece no roadmap. Não desative o Gatekeeper nem a segurança do sistema para instalar este app.
+Os downloads de DMG e ZIP ficam em [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases). Confira a versão e a origem antes de executar. O DMG facilita a cópia do app; ele não fornece notarização. A autorização do build baixado e a ativação das extensões Quick Look em um Mac sem instalação anterior ainda exigem validação própria. Não desative o Gatekeeper nem a segurança do sistema para instalar este app.
 
 ## Conferir a instalação
 
@@ -72,14 +84,26 @@ Os previews sob demanda continuam disponíveis. Use `--render` ou `--index` em f
 
 ## Atualizar
 
+1. Baixe o DMG mais recente em [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases/latest).
+2. Feche o 3dSlicerRouter. Se você ativou o item opcional em background, desligue-o em **Ajustes do Sistema → Geral → Itens de Início de Sessão** antes de substituir o app.
+3. Arraste o app novo para **Aplicativos** e escolha **Substituir**. Ejete a imagem e abra o app instalado. Confira novas autorizações do macOS e reative o item em background, se necessário.
+
+Os mapeamentos e as escolhas por arquivo permanecem nos dados do usuário. Não há atualizador automático.
+
+Para uma instalação a partir do código:
+
 ```sh
 git pull --ff-only
 ./scripts/build.sh --test --install
 ```
 
-O instalador preserva o estado habilitado do indexador opcional e registra as extensões atualizadas. Os mapeamentos e as escolhas por arquivo permanecem nos dados do usuário. Confira qualquer autorização que o macOS pedir após a atualização.
+O script de build preserva o estado habilitado do indexador opcional e registra as extensões atualizadas. Confira qualquer autorização que o macOS pedir após a atualização.
 
 ## Desinstalar
+
+Desative o item opcional em background nos Ajustes do Sistema, se estiver ativo. Mova **3dSlicerRouter** de **Aplicativos** para a Lixeira. No Finder, use **Obter Informações → Abrir com → Alterar Tudo…** para associar `.3mf` a outro fatiador instalado. Isso mantém catálogo, cache, logs e escolhas de roteamento nos dados do usuário.
+
+Para uma instalação a partir do código, este script também remove catálogo, cache de previews e logs do app:
 
 ```sh
 ./scripts/uninstall.sh

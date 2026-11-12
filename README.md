@@ -18,6 +18,8 @@ Everything runs locally, without an account or a network service.
 ![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+**[Download for macOS (.dmg)](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)** · [All releases](https://github.com/MoraesGil/3dSlicerRouter/releases)
+
 [Install](docs/INSTALL.md) · [Routing demo](#open-in-the-right-slicer-automatically) · [Preview demo](#see-your-build-plate-before-opening-the-file) · [Português](README.pt-BR.md)
 
 </div>
@@ -160,6 +162,19 @@ Opening a file directly in another slicer does not update the router's choice.
 
 Requires macOS 14 or newer and at least one slicer.
 
+1. **[Download 3dSlicerRouter.dmg](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)**. One app supports Apple silicon and Intel.
+2. Open the DMG and drag **3dSlicerRouter** to **Applications**. Eject the disk image.
+3. Open the app from **Applications** and choose **Make default for .3mf**.
+
+You do not need Xcode, Homebrew or Terminal. The release includes an alternative ZIP and SHA-256 checksums.
+
+**First-launch approval:** the app is ad-hoc signed, without Developer ID signing or notarization.
+macOS can block it. If you trust the download, follow Apple's per-app [Open Anyway instructions](https://support.apple.com/102445).
+Managed Macs may prevent this approval. Do not disable Gatekeeper or remove quarantine.
+
+<details>
+<summary>Build from source (developers)</summary>
+
 ```sh
 brew install xcodegen
 git clone https://github.com/MoraesGil/3dSlicerRouter.git && cd 3dSlicerRouter
@@ -168,12 +183,13 @@ alias 3dSlicerRouter=/Applications/3dSlicerRouter.app/Contents/MacOS/3dSlicerRou
 3dSlicerRouter --set-default
 ```
 
-Prebuilt packages, when available, are listed under [Releases](https://github.com/MoraesGil/3dSlicerRouter/releases).
 Local builds use an ad-hoc signature. Developer ID signing and notarization are not provided by this build script.
 Dependencies, update and **uninstall**: [docs/INSTALL.md](docs/INSTALL.md).
 
 If Xcode's build service stalls, `./scripts/build.sh --native --test` builds the same universal app and
 runs the full test suite using `swiftc` and `xctest`. It still requires Xcode's SDK and command-line tools.
+
+</details>
 
 ## Try it
 

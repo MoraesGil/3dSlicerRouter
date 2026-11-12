@@ -21,7 +21,12 @@ jobs:
         run: ./scripts/build.sh --test
       - name: Package
         run: ./scripts/package.sh
+      - name: Verify downloadable packages
+        run: ./scripts/verify-package.sh
       - uses: actions/upload-artifact@v4
         with:
           name: 3dSlicerRouter
-          path: build/3dSlicerRouter.zip
+          path: |
+            build/3dSlicerRouter.dmg
+            build/3dSlicerRouter.zip
+            build/SHA256SUMS
