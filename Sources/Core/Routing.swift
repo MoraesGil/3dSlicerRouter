@@ -17,7 +17,13 @@ public struct SlicerApp: Codable, Equatable, Hashable {
         bundleID: "com.orcaslicer.OrcaSlicer", path: "/Applications/OrcaSlicer.app", name: "OrcaSlicer")
     public static let snapmakerOrca = SlicerApp(
         bundleID: "com.snapmaker.snapmaker-orca", path: "/Applications/Snapmaker Orca.app", name: "Snapmaker Orca")
-    public static let known = [orcaSlicer, bambuStudio, snapmakerOrca]
+    public static let prusaSlicer = SlicerApp(
+        bundleID: "com.prusa3d.slic3r/", path: "/Applications/PrusaSlicer.app", name: "PrusaSlicer")
+    public static let cura = SlicerApp(
+        bundleID: "nl.ultimaker.cura", path: "/Applications/UltiMaker Cura.app", name: "UltiMaker Cura")
+    public static let crealityPrint = SlicerApp(
+        bundleID: "com.creality.crealityprint", path: "/Applications/CrealityPrint.app", name: "Creality Print")
+    public static let known = [orcaSlicer, bambuStudio, snapmakerOrca, prusaSlicer, cura, crealityPrint]
 }
 
 /// Decisão gravada no arquivo (xattr) e no índice SQLite.
