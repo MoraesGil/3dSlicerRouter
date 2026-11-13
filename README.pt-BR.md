@@ -46,9 +46,9 @@ ele pergunta qual slicer instalado usar.
 
 <img src="docs/images/router-file-icons.png" width="100%" alt="Variantes da logo do Router com cores e marcadores de cada slicer">
 
-Os ícones pequenos no **Finder** usam a logo do Router, com a cor e o marcador do slicer escolhido.
-Os previews grandes preservam a peça e suas cores. Encontre o projeto pela geometria e pelas cores.
-As thumbnails mostram a primeira mesa. Selecione um arquivo e pressione **Espaço** para abrir o **Quick Look**: gire e amplie um projeto
+Os ícones de arquivo no **Finder** usam a logo do Router, com a cor e o marcador do slicer escolhido.
+O macOS também usa esse ícone personalizado na visualização por ícones do Finder. As thumbnails
+do modelo continuam disponíveis para clientes do Quick Look. Selecione um arquivo e pressione **Espaço** para abrir o **Quick Look**: gire e amplie um projeto
 de uma mesa em 3D ou veja todas as mesas juntas em um projeto com várias mesas. Não é preciso abrir o slicer.
 
 | Uma mesa, cores pintadas | Várias mesas, uma visão geral |
@@ -62,7 +62,7 @@ de uma mesa em 3D ou veja todas as mesas juntas em um projeto com várias mesas.
   caminho de extrusão na cor do filamento de cada ferramenta. O Quick Look abre esse caminho em 3D.
 - **Render local:** SceneKit e Metal geram os previews no Mac. Não é preciso modelo de IA, API key ou conta.
 
-O Finder usa a thumbnail indexada da revisão atual quando ela existe. Sem ela, renderiza a geometria
+As solicitações de thumbnail usam a imagem indexada da revisão atual quando ela existe. Sem ela, renderizam a geometria
 atual da primeira mesa sob demanda. Se o render falhar ou o projeto comprimido exceder 250 MB, usa a
 imagem salva pelo slicer, que pode estar desatualizada. A [indexação em background](#previews-em-background-opcional) é opcional.
 
@@ -275,8 +275,8 @@ Segure **⌥ (Option)** ao abrir para escolher outro slicer.
 
 **Todos os ícones mudam logo após instalar?** Não. Os ícones pequenos usam a logo do Router com a cor
 e o marcador do slicer. Eles são atualizados ao abrir ou indexar o arquivo e quando o Finder solicita
-uma thumbnail. Arquivos nunca abertos ou indexados podem manter o ícone anterior. O preview grande
-da peça e o Quick Look continuam disponíveis. Se o arquivo não permitir escrita ou o sistema de arquivos
+uma thumbnail. Arquivos nunca abertos ou indexados podem manter o ícone anterior. A visualização por
+ícones do Finder também mostra a logo personalizada; pressione **Espaço** para conferir o modelo no Quick Look. Se o arquivo não permitir escrita ou o sistema de arquivos
 não aceitar atributos estendidos, a abertura continua funcionando; o Finder usa o ícone da extensão
 ou a thumbnail de fallback.
 

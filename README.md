@@ -46,9 +46,9 @@ choose from the slicers installed on your Mac.
 
 <img src="docs/images/router-file-icons.png" width="100%" alt="Router logo variants with colours and letter markers for each slicer">
 
-Small **Finder** icons use the Router logo with the chosen slicer's colour and marker.
-Large previews preserve the part and its colours. Find the right project by its geometry and colours.
-Thumbnails show the first build plate. Select a file and press **Space** for **Quick Look**: orbit and zoom a single-plate
+**Finder** file icons use the Router logo with the chosen slicer's colour and marker.
+macOS also uses this custom icon in Finder's icon view. Model thumbnails remain available to
+Quick Look clients. Select a file and press **Space** for **Quick Look**: orbit and zoom a single-plate
 project in 3D, or see all plates together in a multi-plate project. You do not need to launch a slicer.
 
 | One plate, painted colours | Multiple plates, one overview |
@@ -62,7 +62,7 @@ project in 3D, or see all plates together in a multi-plate project. You do not n
   extrusion path in each tool's filament colour. Quick Look opens the toolpath in 3D.
 - **Local rendering:** SceneKit and Metal generate the previews on your Mac. No AI model, API key or account is required.
 
-Finder uses a current indexed thumbnail when available, or renders the current first-plate geometry
+Thumbnail requests use a current indexed image when available, or render the current first-plate geometry
 on demand. If rendering fails or the compressed project exceeds 250 MB, it falls back to the slicer's
 saved first-plate image, which can be out of date. [Background indexing](#background-previews-optional) is optional.
 
@@ -278,8 +278,8 @@ Hold **⌥ (Option)** when opening to choose another slicer.
 
 **Do all file icons change immediately after installation?** No. Small icons use the Router logo with
 the slicer's colour and marker. They update when a file is opened or indexed, and when Finder requests
-a thumbnail. Files never opened or indexed can keep their previous icon. Large part previews and
-Quick Look remain available. If the file is not writable or its filesystem does not support extended
+a thumbnail. Files never opened or indexed can keep their previous icon. Finder's icon view also
+shows the custom logo; press **Space** to inspect the model in Quick Look. If the file is not writable or its filesystem does not support extended
 attributes, opening still works; Finder uses the extension icon or thumbnail fallback.
 
 **Does the preview update after I edit the project?** A save invalidates the generated preview. Finder's
