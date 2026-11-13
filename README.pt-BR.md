@@ -44,9 +44,10 @@ ele pergunta qual slicer instalado usar.
 
 ## Veja a mesa antes mesmo de abrir o arquivo
 
-<img src="docs/images/router-file-icons.png" width="100%" alt="Variantes da logo do Router com cores e marcadores de cada slicer">
+<img src="docs/images/router-file-icons.png" width="100%" alt="Logo inteira do Router e borda na cor de cada slicer de destino">
 
-Os ícones de arquivo no **Finder** usam a logo do Router, com a cor e o marcador do slicer escolhido.
+Os ícones de arquivo no **Finder** usam a logo inteira do Router na cor do slicer de destino.
+A borda usa a mesma cor. Arquivos `.3mf` e `.gcode` com o mesmo destino usam a mesma cor.
 O macOS também usa esse ícone personalizado na visualização por ícones do Finder. As thumbnails
 do modelo continuam disponíveis para clientes do Quick Look. Selecione um arquivo e pressione **Espaço** para abrir o **Quick Look**: gire e amplie um projeto
 de uma mesa em 3D ou veja todas as mesas juntas em um projeto com várias mesas. Não é preciso abrir o slicer.
@@ -273,8 +274,9 @@ O conteúdo do 3MF ou G-code continua idêntico, byte a byte.
 Uma escolha manual salva por arquivo ou um mapeamento explícito da impressora tem prioridade.
 Segure **⌥ (Option)** ao abrir para escolher outro slicer.
 
-**Todos os ícones mudam logo após instalar?** Não. Os ícones pequenos usam a logo do Router com a cor
-e o marcador do slicer. Eles são atualizados ao abrir ou indexar o arquivo e quando o Finder solicita
+**Todos os ícones mudam logo após instalar?** Não. A logo inteira do Router e sua borda usam a cor
+do slicer de destino, igual para `.3mf` e `.gcode`. Os ícones são atualizados ao abrir ou indexar
+o arquivo e quando o Finder solicita
 uma thumbnail. Arquivos nunca abertos ou indexados podem manter o ícone anterior. A visualização por
 ícones do Finder também mostra a logo personalizada; pressione **Espaço** para conferir o modelo no Quick Look. Se o arquivo não permitir escrita ou o sistema de arquivos
 não aceitar atributos estendidos, a abertura continua funcionando; o Finder usa o ícone da extensão

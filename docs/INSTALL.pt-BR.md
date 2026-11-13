@@ -57,7 +57,9 @@ Abrir um arquivo selecionado e renderizar seu preview não exige Acessibilidade 
 
 ## Ícones dos arquivos no Finder
 
-Os ícones pequenos mantêm a logo do Router. A cor da borda e o marcador indicam o slicer escolhido: Bambu Studio (B), OrcaSlicer (O), Snapmaker Orca (S), PrusaSlicer (P), Cura (C), Creality Print (CR) ou Elegoo (E). Slicers desconhecidos usam o Router neutro (R). As miniaturas grandes e o Quick Look continuam mostrando a peça ou o toolpath.
+Os ícones de arquivo usam a logo inteira do Router e a borda na cor do slicer de destino. Arquivos `.3mf` e `.gcode` com o mesmo destino usam a mesma cor. Os destinos incluem Bambu Studio, OrcaSlicer, Snapmaker Orca, PrusaSlicer, Cura, Creality Print e Elegoo. Slicers desconhecidos usam a logo neutra do Router.
+
+A visualização por ícones do Finder também usa essa logo personalizada. As thumbnails do modelo continuam disponíveis para clientes do Quick Look. Pressione **Espaço** para conferir a peça ou o toolpath no Quick Look.
 
 No G-code, a escolha manual salva tem prioridade. Depois vêm o mapeamento explícito da impressora e o gerador declarado. O padrão de uma marca não substitui um gerador reconhecido. Segure Option ao abrir para escolher novamente.
 

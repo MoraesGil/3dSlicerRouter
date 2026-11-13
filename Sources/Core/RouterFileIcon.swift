@@ -1,7 +1,7 @@
 import AppKit
 import CryptoKit
 
-/// Our logo stays recognizable; the outline and letter identify the selected slicer.
+/// The Router shape stays recognizable; its colour identifies the destination slicer.
 public enum SlicerIconStyle: String, CaseIterable {
     case router, bambu, orca, snapmaker, prusa, cura, creality, elegoo
 
@@ -18,30 +18,17 @@ public enum SlicerIconStyle: String, CaseIterable {
         return .router
     }
 
-    public var marker: String {
-        switch self {
-        case .router: return "R"
-        case .bambu: return "B"
-        case .orca: return "O"
-        case .snapmaker: return "S"
-        case .prusa: return "P"
-        case .cura: return "C"
-        case .creality: return "CR"
-        case .elegoo: return "E"
-        }
-    }
-
     public var colour: NSColor {
         let rgb: UInt32
         switch self {
         case .router: rgb = 0x87D9B6
         case .bambu: rgb = 0x00AE42
         case .orca: rgb = 0x368BC7
-        case .snapmaker: rgb = 0x25BBAA
+        case .snapmaker: rgb = 0xF1F1F1
         case .prusa: rgb = 0xF47929
         case .cura: rgb = 0x2463D8
         case .creality: rgb = 0x00A67A
-        case .elegoo: rgb = 0xB64479
+        case .elegoo: rgb = 0x266FD5
         }
         return NSColor(srgbRed: CGFloat((rgb >> 16) & 255) / 255,
                        green: CGFloat((rgb >> 8) & 255) / 255, blue: CGFloat(rgb & 255) / 255, alpha: 1)
@@ -114,7 +101,7 @@ public enum RouterFileIcon {
                                    xRadius: s * 0.20, yRadius: s * 0.20)
         NSColor(srgbRed: 0.09, green: 0.11, blue: 0.14, alpha: 1).setFill(); outline.fill()
         if let logo = logoURL.flatMap({ NSImage(contentsOf: $0) }) {
-            logo.draw(in: NSRect(x: s * 0.105, y: s * 0.105, width: s * 0.79, height: s * 0.79))
+            logo.draw(in: NSRect(origin: .zero, size: size))
         } else {
             // Keep an identifiable stacked Router mark if the resource cannot be loaded.
             for y in [0.30, 0.44, 0.58] {
@@ -123,18 +110,17 @@ public enum RouterFileIcon {
                              xRadius: s * 0.025, yRadius: s * 0.025).fill()
             }
         }
-        outline.lineWidth = max(1, s * 0.055)
+        if style != .router {
+            // Colour blending keeps the original lighting and relief while replacing
+            // both the green and blue parts with the destination slicer's hue.
+            context.cgContext.saveGState()
+            context.cgContext.setBlendMode(.color)
+            style.colour.setFill()
+            outline.fill()
+            context.cgContext.restoreGState()
+        }
+        outline.lineWidth = max(1, s * 0.035)
         style.colour.setStroke(); outline.stroke()
-        let badge = NSRect(x: s * 0.59, y: s * 0.025, width: s * 0.39, height: s * 0.39)
-        let circle = NSBezierPath(ovalIn: badge)
-        style.colour.setFill(); circle.fill()
-        circle.lineWidth = max(1, s * 0.025)
-        NSColor(srgbRed: 0.06, green: 0.08, blue: 0.10, alpha: 1).setStroke(); circle.stroke()
-        let font = NSFont.systemFont(ofSize: s * (style.marker.count == 1 ? 0.255 : 0.17), weight: .heavy)
-        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.white]
-        let text = style.marker as NSString
-        let textSize = text.size(withAttributes: attributes)
-        text.draw(at: NSPoint(x: badge.midX - textSize.width / 2, y: badge.midY - textSize.height / 2), withAttributes: attributes)
         image.addRepresentation(bitmap)
         return image
     }
@@ -164,7 +150,7 @@ public enum RouterFileIcon {
     private static func ownsIcon(_ url: URL, marker: String?) -> Bool {
         guard let marker else { return false }
         let fields = marker.split(separator: ":")
-        return fields.count == 3 && fields[0] == "v2" && resourceDigest(url) == String(fields[2])
+        return fields.count == 3 && ["v2", "v3"].contains(fields[0]) && resourceDigest(url) == String(fields[2])
     }
 
     private static func digest(_ handle: FileHandle) throws -> Data {
@@ -203,7 +189,7 @@ public enum RouterFileIcon {
     public static func apply(to url: URL, app: SlicerApp?) -> Bool {
         guard FileAssociations.extensions.contains(url.pathExtension.lowercased()),
               FileManager.default.isWritableFile(atPath: url.path) else { return false }
-        let stamp = "v2:\(SlicerIconStyle.style(for: app).rawValue)"
+        let stamp = "v3:\(SlicerIconStyle.style(for: app).rawValue)"
         lock.lock(); defer { lock.unlock() }
         let previous = marker(for: url)
         let owned = ownsIcon(url, marker: previous)

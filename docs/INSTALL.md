@@ -57,7 +57,9 @@ Opening a selected file and rendering its preview do not require Accessibility o
 
 ## Finder file icons
 
-Small icons retain the Router logo. The outline colour and marker indicate the selected slicer: Bambu Studio (B), OrcaSlicer (O), Snapmaker Orca (S), PrusaSlicer (P), Cura (C), Creality Print (CR) or Elegoo (E). Unknown slicers use the neutral Router (R). Large thumbnails and Quick Look still show the model or toolpath.
+File icons tint the entire Router logo and its outline in the destination slicer's colour. Files with the same destination use the same colour for `.3mf` and `.gcode`. Destinations include Bambu Studio, OrcaSlicer, Snapmaker Orca, PrusaSlicer, Cura, Creality Print and Elegoo. Unknown slicers use the neutral Router logo.
+
+Finder's icon view also uses this custom logo. Model thumbnails remain available to Quick Look clients. Press **Space** to inspect the model or toolpath in Quick Look.
 
 For G-code, a saved manual choice wins, followed by an explicit printer mapping and the declared generator. A plain brand default does not override a recognized generator. Hold Option while opening to choose again.
 

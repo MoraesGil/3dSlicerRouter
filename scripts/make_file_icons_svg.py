@@ -24,7 +24,7 @@ def main():
             centre = 62.5 + index * 125
             items.append(f'<image x="{centre - 44}" y="24" width="88" height="88" href="data:image/png;base64,{encoded}"/>')
             items.append(f'<text x="{centre}" y="142" text-anchor="middle" fill="#E3ECE7" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="16">{label}</text>')
-    svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="170" viewBox="0 0 1000 170" role="img" aria-label="Router file icons with slicer colours and letter markers">\n'
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="170" viewBox="0 0 1000 170" role="img" aria-label="Whole Router logos and outlines tinted by destination slicer">\n'
     svg += '<rect width="1000" height="170" rx="18" fill="#111820"/>\n'
     svg += "\n".join(items) + "\n</svg>\n"
     destination = ROOT / "docs/images/router-file-icons.svg"
