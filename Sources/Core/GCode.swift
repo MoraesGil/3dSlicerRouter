@@ -20,7 +20,8 @@ public enum GCode {
         let tail = data.count > headBytes ? String(decoding: data.suffix(tailBytes), as: UTF8.self).replacingOccurrences(of: "\r\n", with: "\n") : ""
         var meta = Metadata()
         meta.thumbnail = largestThumbnail(in: head)
-        meta.generator = head.firstMatch(#"(?im)^;[ \t]*generated (?:by|with) ([^\n]+)"#)
+        meta.generator = (head.firstMatch(#"(?im)^;[ \t]*generated (?:by|with) ([^\n]+)"#)
+            ?? head.firstMatch(#"(?im)^;[ \t]*generator\.name[ \t]*:[ \t]*([^\n]+)"#))
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         let config = head + "\n" + tail
         func value(_ key: String) -> String? {

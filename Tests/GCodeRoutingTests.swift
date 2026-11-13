@@ -61,4 +61,31 @@ final class GCodeRoutingTests: XCTestCase {
             try document(header + "\n") { doc, _ in XCTAssertEqual(doc.originatingSlicer, app, header) }
         }
     }
+    func testStructuredGeneratorWithoutPrinterAndManualChoice() throws {
+        try document(";START_OF_HEADER\r\n;generator.name:PrusaSlicer\r\n;GENERATOR.VERSION:2.9\r\n;END_OF_HEADER\r\n") { doc, _ in
+            XCTAssertEqual(doc.originatingSlicer, .prusaSlicer)
+            XCTAssertEqual(doc.expectedApp(record: nil, mappings: Mappings()), .prusaSlicer)
+            XCTAssertEqual(doc.expectedApp(record: self.record(.bambuStudio, override: true), mappings: Mappings()), .bambuStudio)
+        }
+    }
+
+    func testStructuredCuraAndOriginalGeneratedBy() throws {
+        for header in [";GENERATOR.NAME:Cura_SteamEngine", ";Generated with Cura_SteamEngine 5.8"] {
+            try document(header + "\n") { doc, _ in
+                XCTAssertEqual(doc.originatingSlicer, .cura)
+                XCTAssertEqual(doc.expectedApp(record: nil, mappings: Mappings()), .cura)
+            }
+        }
+    }
+
+    func testPrusaBundleIDAliasesOnly() {
+        XCTAssertTrue(SlicerApp.prusaSlicer.matchesBundleID("com.prusa3d.slic3r/"))
+        XCTAssertTrue(SlicerApp.prusaSlicer.matchesBundleID("com.prusa3d.slic3r"))
+        let noSlash = SlicerApp(bundleID: "com.prusa3d.slic3r", path: "/tmp/Prusa.app", name: "Prusa")
+        XCTAssertTrue(noSlash.matchesBundleID("com.prusa3d.slic3r/"))
+        XCTAssertFalse(noSlash.matchesBundleID("com.prusa3d.slic3r.other"))
+        XCTAssertFalse(SlicerApp.orcaSlicer.matchesBundleID(SlicerApp.orcaSlicer.bundleID + "/"))
+        XCTAssertTrue(SlicerApp.orcaSlicer.matchesBundleID(SlicerApp.orcaSlicer.bundleID))
+    }
+
 }

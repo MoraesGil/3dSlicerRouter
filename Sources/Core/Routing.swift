@@ -11,6 +11,13 @@ public struct SlicerApp: Codable, Equatable, Hashable {
         self.name = name
     }
 
+    /// PrusaSlicer releases have used both forms of the same bundle identifier.
+    public func matchesBundleID(_ identifier: String) -> Bool {
+        if bundleID == identifier { return true }
+        let prusaIDs: Set<String> = ["com.prusa3d.slic3r", "com.prusa3d.slic3r/"]
+        return prusaIDs.contains(bundleID) && prusaIDs.contains(identifier)
+    }
+
     public static let bambuStudio = SlicerApp(
         bundleID: "com.bambulab.bambu-studio", path: "/Applications/BambuStudio.app", name: "Bambu Studio")
     public static let orcaSlicer = SlicerApp(
