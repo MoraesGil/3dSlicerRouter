@@ -28,10 +28,12 @@ final class RouterApp: NSObject, NSApplicationDelegate {
             handleAlreadyOpen(url, project, optionHeld: optionHeld)
             return
         }
-        let info = (try? ThreeMF.info(url: url)) ?? ThreeMFInfo()
+        let document = (try? RoutableDocument.read(url: url)) ?? RoutableDocument(info: ThreeMFInfo(), generator: nil,
+            originatingSlicer: nil, isGCode: url.pathExtension.lowercased() == "gcode")
+        let info = document.info
         let record = store.record(for: url)
         let mappings = store.mappings()
-        var decision = Router.decide(info: info, record: record, mappings: mappings, optionHeld: optionHeld)
+        var decision = document.decide(record: record, mappings: mappings, optionHeld: optionHeld)
 
         if case let .open(app, _) = decision, SlicerApp.installedURL(for: app) == nil {
             decision = .ask(.appUnavailable(app.name), suggested: nil)
@@ -40,11 +42,12 @@ final class RouterApp: NSObject, NSApplicationDelegate {
         let app: SlicerApp, reason: String, override: Bool
         switch decision {
         case let .open(a, r):
-            app = a; reason = r; override = record?.override ?? false
+            app = SlicerApp.installedApplication(for: a) ?? a; reason = r; override = record?.override ?? false
         case let .ask(why, suggested):
             guard let choice = Prompt.choose(url: url, info: info, reason: why, suggested: suggested) else { return }
             app = choice.app; reason = "escolha do dono"
-            override = info.printerModel.flatMap(mappings.app(for:)) != choice.app
+            // A deliberate per-file choice survives a later change of G-code generator.
+            override = true
             if choice.remember, let model = info.printerModel { store.remember(printer: model, app: choice.app) }
         }
 
@@ -132,14 +135,21 @@ final class RouterApp: NSObject, NSApplicationDelegate {
         let alert = NSAlert()
         alert.messageText = "3dSlicerRouter"
         let current = NSWorkspace.shared.urlForApplication(toOpen: Self.threeMFType).map { $0.lastPathComponent } ?? L10n.none
-        alert.informativeText = L10n.about(current: current)
+        let gcode = NSWorkspace.shared.urlForApplication(toOpen: UTType(filenameExtension: "gcode") ?? FileAssociations.gcode)
+            .map { $0.lastPathComponent } ?? L10n.none
+        alert.informativeText = L10n.about(current: current, gcode: gcode)
         alert.addButton(withTitle: L10n.makeDefault)
+        alert.addButton(withTitle: L10n.refreshIcons)
         alert.addButton(withTitle: L10n.close)
-        if alert.runModal() == .alertFirstButtonReturn {
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
             Self.makeDefault { error in
                 if let error { Prompt.error(L10n.defaultFailed, detail: error.localizedDescription) }
                 NSApp.terminate(nil)
             }
+        } else if response == .alertSecondButtonReturn {
+            refreshFileIcons()
+            NSApp.terminate(nil)
         } else {
             NSApp.terminate(nil)
         }
@@ -148,8 +158,25 @@ final class RouterApp: NSObject, NSApplicationDelegate {
     static let threeMFType = UTType(filenameExtension: "3mf") ?? UTType(importedAs: "org.3mf.3mf")
 
     static func makeDefault(_ done: @escaping (Error?) -> Void) {
-        NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpen: threeMFType) { error in
-            DispatchQueue.main.async { done(error) }
+        FileAssociations.makeDefault(at: Bundle.main.bundleURL, completion: done)
+    }
+
+    private func refreshFileIcons() {
+        let picker = NSOpenPanel()
+        picker.title = L10n.refreshIcons
+        picker.allowedContentTypes = FileAssociations.types
+        picker.allowsMultipleSelection = true
+        picker.canChooseDirectories = false
+        guard picker.runModal() == .OK else { return }
+        var updated = 0
+        for url in picker.urls {
+            guard let document = try? RoutableDocument.read(url: url) else { continue }
+            let app = document.expectedApp(record: store.record(for: url), mappings: store.mappings())
+            if RouterFileIcon.apply(to: url, app: app) { updated += 1 }
         }
+        let result = NSAlert()
+        result.messageText = L10n.refreshedIcons(updated, total: picker.urls.count)
+        result.informativeText = L10n.iconMetadataOnly
+        result.runModal()
     }
 }

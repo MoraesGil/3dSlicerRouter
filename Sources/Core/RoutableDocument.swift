@@ -38,7 +38,10 @@ public struct RoutableDocument {
         let explicit = info.printerModel.flatMap { mappings.byModel[$0] }
         let selected = record?.override == true ? record?.app : (explicit ?? originatingSlicer)
         // Preserve an installed custom path only when it identifies the same app.
-        let target = selected.map { app in record?.app.bundleID == app.bundleID ? record!.app : app }
+        let target = selected.map { app in
+            if record?.override != true, explicit != nil { return app }
+            return record.map { app.matchesBundleID($0.app.bundleID) ? $0.app : app } ?? app
+        }
         if optionHeld {
             let fallback = info.printerModel.flatMap { mappings.app(for: $0) }
             return .ask(.manual, suggested: target ?? fallback)

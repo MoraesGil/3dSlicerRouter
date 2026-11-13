@@ -45,7 +45,7 @@ jobs:
 
           1. Open the DMG and drag **3dSlicerRouter** to **Applications**.
           2. Eject the disk image and open the app from **Applications**.
-          3. Choose **Make default for .3mf**. Keep at least one slicer installed.
+          3. Choose **Use for .3mf and .gcode**. Keep at least one slicer installed.
 
           **Signing:** this release is ad-hoc signed, not Developer ID signed or notarized. macOS can block the first launch. If you trust the download, use Apple's per-app [Open Anyway instructions](https://support.apple.com/102445). Managed Macs may prevent approval. Do not disable Gatekeeper or remove quarantine. Background indexing remains experimental; routing and on-demand previews work independently.
 
@@ -55,7 +55,7 @@ jobs:
 
           1. Abra o DMG e arraste **3dSlicerRouter** para **Applications**.
           2. Ejete a imagem e abra o app em **Aplicativos**.
-          3. Escolha **Tornar padrão para .3mf**. Mantenha um fatiador instalado.
+          3. Escolha **Usar para .3mf e .gcode**. Mantenha um fatiador instalado.
 
           **Assinatura:** esta versão usa assinatura ad-hoc, sem Developer ID nem notarização. O macOS pode bloquear a primeira abertura. Se você confia no download, siga as [instruções da Apple para Abrir Mesmo Assim](https://support.apple.com/102445). Macs gerenciados podem impedir essa autorização. Não desative o Gatekeeper nem remova a quarentena. A indexação em background continua experimental; o roteamento e os previews sob demanda são independentes.
 

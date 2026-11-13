@@ -44,6 +44,8 @@ ele pergunta qual slicer instalado usar.
 
 ## Veja a mesa antes mesmo de abrir o arquivo
 
+<img src="docs/images/router-file-icons.png" width="100%" alt="Variantes da logo do Router com cores e marcadores de cada slicer">
+
 Os ícones pequenos no **Finder** usam a logo do Router, com a cor e o marcador do slicer escolhido.
 Os previews grandes preservam a peça e suas cores. Encontre o projeto pela geometria e pelas cores.
 As thumbnails mostram a primeira mesa. Selecione um arquivo e pressione **Espaço** para abrir o **Quick Look**: gire e amplie um projeto
@@ -142,6 +144,8 @@ abrir o Finder:
 
 ## Como decide
 
+A tabela abaixo descreve o roteamento de 3MF. No G-code: escolha confirmada por arquivo → mapeamento explícito → gerador declarado → padrão da impressora ou seletor. Um arquivo copiado de outro Mac não autoriza um novo caminho de aplicativo.
+
 | Situação | Resultado |
 |---|---|
 | Primeira abertura de 3MF | Regra explícita da impressora; sem regra, Bambu Studio para Bambu Lab e OrcaSlicer oficial para as demais |
@@ -174,7 +178,7 @@ Abrir o arquivo diretamente em outro slicer não atualiza a escolha do router.
 
 1. **[Baixe 3dSlicerRouter.dmg](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)**. O mesmo app atende Apple silicon e Intel, no macOS 14 ou mais novo.
 2. Abra o DMG e arraste **3dSlicerRouter** para **Applications**. Ejete a imagem de disco.
-3. Abra o app em **Aplicativos** e escolha **Tornar padrão para .3mf e .gcode**. Mantenha um fatiador instalado.
+3. Abra o app em **Aplicativos** e escolha **Usar para .3mf e .gcode**. Mantenha um fatiador instalado.
 
 Você não precisa de Xcode, Homebrew nem Terminal. A Release inclui um ZIP alternativo e hashes SHA-256.
 
@@ -205,7 +209,7 @@ roda a suíte completa com `swiftc` e `xctest`. O SDK e as ferramentas de linha 
 
 ## Teste
 
-Sete projetos sintéticos pequenos em [`samples/`](samples/) cobrem todos os caminhos:
+Sete projetos 3MF sintéticos pequenos em [`samples/`](samples/) demonstram o roteamento e os previews:
 
 ```sh
 open samples/bambu-a1-keychain-tray.3mf        # Bambu Studio

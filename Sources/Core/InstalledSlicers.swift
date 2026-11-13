@@ -17,14 +17,16 @@ extension SlicerApp {
                 }
             }
         }
-        urls += registeredURLs ?? known.flatMap { NSWorkspace.shared.urlsForApplications(withBundleIdentifier: $0.bundleID) }
+        urls += registeredURLs ?? known.flatMap { app in
+            app.registrationIDs.flatMap { NSWorkspace.shared.urlsForApplications(withBundleIdentifier: $0) }
+        }
         var seen = Set<String>()
         let apps = urls.compactMap(installation).filter { app in
             (isSlicer(app) || app.bundleID == suggested?.bundleID) && seen.insert(app.bundleID).inserted
         }
         func rank(_ app: SlicerApp) -> Int {
             if app.bundleID == suggested?.bundleID { return -1 }
-            return known.firstIndex { $0.bundleID == app.bundleID } ?? known.count
+            return known.firstIndex { $0.matchesBundleID(app.bundleID) } ?? known.count
         }
         return apps.sorted {
             rank($0) == rank($1) ? $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending : rank($0) < rank($1)
@@ -39,16 +41,24 @@ extension SlicerApp {
     /// Preserve an exact recorded installation before considering another copy.
     public static func installedURL(for app: SlicerApp) -> URL? {
         let saved = URL(fileURLWithPath: app.path)
-        if installation(at: saved)?.bundleID == app.bundleID { return saved }
-        return NSWorkspace.shared.urlsForApplications(withBundleIdentifier: app.bundleID)
-            .first { installation(at: $0)?.bundleID == app.bundleID }
+        if let installed = installation(at: saved), app.matchesBundleID(installed.bundleID) { return saved }
+        return app.registrationIDs.flatMap { NSWorkspace.shared.urlsForApplications(withBundleIdentifier: $0) }
+            .first { url in installation(at: url).map { app.matchesBundleID($0.bundleID) } ?? false }
+    }
+
+    public static func installedApplication(for app: SlicerApp) -> SlicerApp? {
+        installedURL(for: app).flatMap(installation)
+    }
+
+    private var registrationIDs: [String] {
+        matchesBundleID("com.prusa3d.slic3r") ? [bundleID, "com.prusa3d.slic3r", "com.prusa3d.slic3r/"] : [bundleID]
     }
 
     private static func installation(at url: URL) -> SlicerApp? {
         guard let bundle = Bundle(url: url), let id = bundle.bundleIdentifier, !id.isEmpty,
               id != "com.moraesdev.3dslicerrouter", let executable = bundle.executableURL,
               FileManager.default.isExecutableFile(atPath: executable.path) else { return nil }
-        let name = known.first { $0.bundleID == id }?.name
+        let name = known.first { $0.matchesBundleID(id) }?.name
             ?? bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
             ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
             ?? url.deletingPathExtension().lastPathComponent
@@ -56,7 +66,7 @@ extension SlicerApp {
     }
 
     private static func isSlicer(_ app: SlicerApp) -> Bool {
-        if known.contains(where: { $0.bundleID == app.bundleID }) { return true }
+        if known.contains(where: { $0.matchesBundleID(app.bundleID) }) { return true }
         let names = ["prusaslicer", "superslicer", "cura", "ultimakercura", "crealityprint",
                      "anycubicslicer", "anycubicslicernext", "qidislicer", "qidistudio", "elegooslicer",
                      "flashprint", "ideamaker", "simplify3d"]

@@ -29,15 +29,17 @@ final class Store {
     // MARK: arquivo
 
     func record(for url: URL) -> FileRecord? {
-        if let r = FileRecord.read(from: url) { return r }
+        let portable = FileRecord.read(from: url)
         // Sem xattr (cópia por zip/upload, por exemplo): tenta o índice pelo caminho.
-        return query("SELECT record FROM files WHERE path = ? ORDER BY updated_at DESC LIMIT 1", [url.path])
+        let local = query("SELECT record FROM files WHERE path = ? OR uuid = ? ORDER BY (path = ?) DESC, updated_at DESC LIMIT 1", [url.path, portable?.uuid ?? "", url.path])
             .first.flatMap { try? decoder.decode(FileRecord.self, from: Data($0.utf8)) }
+        return RoutingPreferences.trustedRecord(portable: portable, local: local)
     }
 
     func save(_ record: FileRecord, for url: URL, reason: String) {
         guard let data = try? coder.encode(record) else { return }
         record.write(to: url)
+        RouterFileIcon.apply(to: url, app: record.app)
         let json = String(decoding: data, as: UTF8.self)
         run("INSERT OR REPLACE INTO files(uuid, path, record, updated_at) VALUES(?, ?, ?, ?)",
             [record.uuid, url.path, json, Date().timeIntervalSince1970])
@@ -47,6 +49,7 @@ final class Store {
 
     func forget(_ url: URL) {
         FileRecord.remove(from: url)
+        RouterFileIcon.remove(from: url)
         run("DELETE FROM files WHERE path = ?", [url.path])
     }
 

@@ -44,6 +44,8 @@ choose from the slicers installed on your Mac.
 
 ## See your build plate before opening the file
 
+<img src="docs/images/router-file-icons.png" width="100%" alt="Router logo variants with colours and letter markers for each slicer">
+
 Small **Finder** icons use the Router logo with the chosen slicer's colour and marker.
 Large previews preserve the part and its colours. Find the right project by its geometry and colours.
 Thumbnails show the first build plate. Select a file and press **Space** for **Quick Look**: orbit and zoom a single-plate
@@ -143,6 +145,8 @@ Big projects take seconds to render. Turn on the indexer and they are ready befo
 
 ## How it decides
 
+The table below describes 3MF routing. G-code uses: confirmed per-file choice → explicit printer mapping → declared generator → printer default or chooser. A file copied from another Mac cannot authorize a new application path.
+
 | Situation | Result |
 |---|---|
 | First 3MF open | Explicit printer mapping; otherwise Bambu Studio for Bambu Lab, official OrcaSlicer for other printers |
@@ -177,7 +181,7 @@ Requires macOS 14 or newer and at least one slicer.
 
 1. **[Download 3dSlicerRouter.dmg](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)**. One app supports Apple silicon and Intel.
 2. Open the DMG and drag **3dSlicerRouter** to **Applications**. Eject the disk image.
-3. Open the app from **Applications** and choose **Make default for .3mf and .gcode**.
+3. Open the app from **Applications** and choose **Use for .3mf and .gcode**.
 
 You do not need Xcode, Homebrew or Terminal. The release includes an alternative ZIP and SHA-256 checksums.
 
@@ -206,7 +210,7 @@ runs the full test suite using `swiftc` and `xctest`. It still requires Xcode's 
 
 ## Try it
 
-Seven small synthetic projects in [`samples/`](samples/) cover every path:
+Seven small synthetic 3MF projects in [`samples/`](samples/) demonstrate printer routing and previews:
 
 ```sh
 open samples/bambu-a1-keychain-tray.3mf        # Bambu Studio

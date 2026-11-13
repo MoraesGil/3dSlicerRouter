@@ -34,22 +34,24 @@ public enum L10n {
     public static func rememberFor(_ model: String) -> String {
         t("Usar sempre para impressoras \(model)", "Always use for \(model) printers")
     }
-    public static var pickTitle: String { t("Escolha o app para abrir o 3MF", "Choose the app to open the 3MF") }
+    public static var pickTitle: String { t("Escolha o fatiador para abrir o arquivo", "Choose the slicer to open the file") }
     public static func notFound(_ app: String) -> String { t("\(app) não foi encontrado", "\(app) was not found") }
     public static func openFailed(_ app: String) -> String { t("Não consegui abrir no \(app)", "Could not open in \(app)") }
-    public static func about(current: String) -> String {
+    public static func about(current: String, gcode: String) -> String {
         t("""
-        Abre cada .3mf no fatiador definido para a impressora declarada.
-        Sem impressora, pergunta entre os fatiadores instalados.
+        Abre .3mf pela impressora e .gcode pelo fatiador que o gerou.
+        Sua escolha por arquivo tem prioridade. Sem metadados, pergunta.
         Segure ⌥ ao abrir para escolher o app.
 
         App padrão de .3mf agora: \(current)
+        App padrão de .gcode agora: \(gcode)
         """, """
-        Opens every .3mf in the slicer assigned to its declared printer.
-        Without a printer, asks you to choose an installed slicer.
+        Opens .3mf by its printer and .gcode by the slicer that generated it.
+        Your per-file choice takes priority. Without metadata, asks you to choose.
         Hold ⌥ while opening to pick the app.
 
         Current default app for .3mf: \(current)
+        Current default app for .gcode: \(gcode)
         """)
     }
     public static func alreadyOpen(_ file: String, _ app: String) -> String {
@@ -69,7 +71,15 @@ public enum L10n {
     public static func closeItFirst(_ app: String) -> String {
         t("Feche o projeto no \(app) e abra o arquivo de novo.", "Close the project in \(app) and open the file again.")
     }
-    public static var makeDefault: String { t("Tornar padrão para .3mf", "Make default for .3mf") }
+    public static var makeDefault: String { t("Usar para .3mf e .gcode", "Use for .3mf and .gcode") }
+    public static var refreshIcons: String { t("Atualizar ícones de arquivos…", "Refresh file icons…") }
+    public static func refreshedIcons(_ count: Int, total: Int) -> String {
+        t("Ícones atualizados: \(count) de \(total)", "Icons updated: \(count) of \(total)")
+    }
+    public static var iconMetadataOnly: String {
+        t("Apenas os metadados de ícone foram alterados. O conteúdo dos arquivos permanece igual.",
+          "Only icon metadata changed. The file contents remain unchanged.")
+    }
     public static var close: String { t("Fechar", "Close") }
     public static var defaultFailed: String { t("Não consegui tornar padrão", "Could not set as default") }
     public static var none: String { t("nenhum", "none") }

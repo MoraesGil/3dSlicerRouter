@@ -10,8 +10,8 @@ settings:
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: ""
     ENABLE_HARDENED_RUNTIME: NO
-    MARKETING_VERSION: "1.4.0"
-    CURRENT_PROJECT_VERSION: "14"
+    MARKETING_VERSION: "1.5.0"
+    CURRENT_PROJECT_VERSION: "15"
 targets:
   SlicerRouter:
     type: application
@@ -51,9 +51,15 @@ targets:
               public.filename-extension: [gcode, GCODE]
         CFBundleDocumentTypes:
           - CFBundleTypeName: 3MF Project
+            CFBundleTypeIconFile: AppIcon
             CFBundleTypeRole: Viewer
             LSHandlerRank: Owner
             LSItemContentTypes: [org.3mf.3mf]
+          - CFBundleTypeName: G-code
+            CFBundleTypeIconFile: AppIcon
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Owner
+            LSItemContentTypes: [com.moraesdev.gcode]
     settings:
       base:
         PRODUCT_NAME: 3dSlicerRouter

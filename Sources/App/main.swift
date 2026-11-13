@@ -1,5 +1,6 @@
 import AppKit
 import ServiceManagement
+import UniformTypeIdentifiers
 
 // CLI para conferir sem abrir app nem roubar foco:
 //   3dSlicerRouter --inspect arq.3mf…      decisão que seria tomada (não grava nada)
@@ -7,7 +8,7 @@ import ServiceManagement
 //   3dSlicerRouter --forget arq.3mf…       apaga a memória do arquivo
 //   3dSlicerRouter --map "<printer_model>" /Applications/App.app   impressora → qualquer fatiador
 //   3dSlicerRouter --mappings              lista os mapeamentos
-//   3dSlicerRouter --set-default           torna o router o app padrão de .3mf
+//   3dSlicerRouter --set-default           torna o router o app padrão de .3mf e .gcode
 let args = Array(CommandLine.arguments.dropFirst())
 
 func describe(_ d: Decision) -> String {
@@ -25,24 +26,47 @@ case "--inspect":
     for path in args.dropFirst() {
         let url = URL(fileURLWithPath: path)
         do {
-            let info = try ThreeMF.info(url: url)
+            let document = try RoutableDocument.read(url: url)
+            let info = document.info
             let record = store.record(for: url)
-            let decision = Router.decide(info: info, record: record, mappings: store.mappings(), optionHeld: false)
+            let decision = document.decide(record: record, mappings: store.mappings(), optionHeld: false)
+            let target = document.expectedApp(record: record, mappings: store.mappings())
             print("""
             \(url.lastPathComponent)
               printer_model: \(info.printerModel ?? "-")  brand: \(info.brand ?? "-")
               application:   \(info.application ?? "-")
+              generator:     \(document.generator ?? "-")
+              origin_slicer: \(document.originatingSlicer?.name ?? "-")
+              icon_style:    \(SlicerIconStyle.style(for: target).rawValue)
               plates: \(info.plateCount)  bed: \(info.bedMin) … \(info.bedMax)
               thumbnail:     \(info.embeddedThumbnail ?? "nenhuma (gera preview)")
               record:        \(record.map { "\($0.uuid) \($0.printerModel ?? "-") → \($0.app.name)" } ?? "-")
               decision:      \(describe(decision))
-              target_app:    \(Router.expectedApp(info: info, record: record, mappings: store.mappings()).map { "\($0.bundleID) → \($0.path)" } ?? "-")
+              target_app:    \(target.map { "\($0.bundleID) → \($0.path)" } ?? "-")
               aberto agora:  \(OpenProjects.find(url, running: RouterApp.process(pid:)).map { "\($0.bundleID) pid \($0.pid)\($0.dirty ? " (alterações não salvas)" : "")" } ?? "não")
             """)
         } catch {
             print("\(path): erro \(error)")
         }
     }
+case "--render-icon":
+    guard args.count >= 3, let style = SlicerIconStyle(rawValue: args[1].lowercased()) else {
+        print("usage: --render-icon router|bambu|orca|snapmaker|prusa|cura|creality|elegoo out.png [px]"); exit(2)
+    }
+    do {
+        let pixels = args.count > 3 ? Int(args[3]) ?? 128 : 128
+        try RouterFileIcon.png(style: style, pixels: pixels).write(to: URL(fileURLWithPath: args[2]))
+        print("ok \(style.rawValue) \(pixels)px")
+    } catch { print("error: \(error)"); exit(1) }
+case "--refresh-icons":
+    let store = Store()
+    var updated = 0
+    for path in args.dropFirst() {
+        let url = URL(fileURLWithPath: path)
+        guard let document = try? RoutableDocument.read(url: url) else { continue }
+        if RouterFileIcon.apply(to: url, app: document.expectedApp(record: store.record(for: url), mappings: store.mappings())) { updated += 1 }
+    }
+    print("icons: \(updated)/\(max(0, args.count - 1))")
 case "--render":
     guard args.count >= 3 else { print("uso: --render arq.3mf out.png [px]"); exit(2) }
     let url = URL(fileURLWithPath: args[1])
@@ -116,7 +140,10 @@ case "--set-default":
     RouterApp.makeDefault { failure = $0; done = true }
     while !done { RunLoop.main.run(until: Date().addingTimeInterval(0.1)) }
     if let failure { print("erro \(failure)"); exit(1) }
-    print("padrão .3mf → \(NSWorkspace.shared.urlForApplication(toOpen: RouterApp.threeMFType)?.path ?? "?")")
+    for ext in FileAssociations.extensions {
+        let type = UTType(filenameExtension: ext) ?? (ext == "3mf" ? FileAssociations.threeMF : FileAssociations.gcode)
+        print("default .\(ext) → \(NSWorkspace.shared.urlForApplication(toOpen: type)?.path ?? "?")")
+    }
 default:
     let app = NSApplication.shared
     let delegate = RouterApp()

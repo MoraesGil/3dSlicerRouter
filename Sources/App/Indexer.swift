@@ -89,7 +89,11 @@ enum Indexer {
                 summary.stoppedEarly = true
                 break
             }
-            if store.isCatalogued(url.path, size: size, modified: modified) { summary.skipped += 1; continue }
+            if store.isCatalogued(url.path, size: size, modified: modified) {
+                refreshIcon(for: url, store: store)
+                summary.skipped += 1
+                continue
+            }
             autoreleasepool {
                 let entry = index(url, size: size, modified: modified)
                 store.upsertCatalog(entry)
@@ -106,6 +110,12 @@ enum Indexer {
         var printer: String?, plates = 1, embedded = false, preview: String?, rendered = false, error: String?
     }
 
+    @discardableResult
+    static func refreshIcon(for url: URL, store: Store) -> Bool {
+        guard let document = try? RoutableDocument.read(url: url) else { return false }
+        return RouterFileIcon.apply(to: url, app: document.expectedApp(record: store.record(for: url), mappings: store.mappings()))
+    }
+
     static func index(_ url: URL, size: Int, modified: Date, cacheDirectory: URL = PreviewCache.directory,
                       readInfo: (URL) throws -> ThreeMFInfo = { try ThreeMF.info(url: $0) }) -> Entry {
         let gcode = url.pathExtension.lowercased() == "gcode"
@@ -115,11 +125,17 @@ enum Indexer {
             let render: () throws -> CGImage
             if gcode {
                 let meta = try GCode.metadata(url: url)
+                if let document = try? RoutableDocument.read(url: url) {
+                    let preferences = RoutingPreferences.read(for: url)
+                    RouterFileIcon.apply(to: url, app: document.expectedApp(record: preferences.record, mappings: preferences.mappings))
+                }
                 entry.printer = meta.info.printerModel
                 entry.embedded = meta.thumbnail != nil
                 render = { try PreviewRenderer.renderGCode(url: url, info: meta.info, size: CGSize(width: 1024, height: 1024)) }
             } else {
                 let info = try readInfo(url)
+                let preferences = RoutingPreferences.read(for: url)
+                RouterFileIcon.apply(to: url, app: Router.expectedApp(info: info, record: preferences.record, mappings: preferences.mappings))
                 entry.printer = info.printerModel
                 entry.plates = info.plateCount
                 entry.embedded = info.embeddedThumbnail != nil
