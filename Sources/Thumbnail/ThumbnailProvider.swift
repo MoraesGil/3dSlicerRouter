@@ -2,7 +2,7 @@ import AppKit
 import QuickLookThumbnailing
 
 /// Thumbnail do Finder para .3mf e .gcode.
-/// - Small requests: Router logo with the preferred slicer's colour and marker.
+/// - Small requests: the whole Router logo uses the destination slicer's colour.
 /// - Larger requests: current model/toolpath preview, preserving geometry and painting.
 final class ThumbnailProvider: QLThumbnailProvider {
     override func provideThumbnail(for request: QLFileThumbnailRequest, _ handler: @escaping (QLThumbnailReply?, Error?) -> Void) {
