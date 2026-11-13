@@ -32,7 +32,7 @@ final class Store {
     func record(for url: URL) -> FileRecord? {
         let portable = FileRecord.read(from: url)
         // Sem xattr (cópia por zip/upload, por exemplo): tenta o índice pelo caminho.
-        let local = query("SELECT record FROM files WHERE path = ? OR uuid = ? ORDER BY (path = ?) DESC, updated_at DESC LIMIT 1", [url.path, portable?.uuid ?? "", url.path])
+        let local = query("SELECT record FROM files WHERE path = ? OR (uuid = ? AND uuid <> '') ORDER BY (uuid = ? AND uuid <> '') DESC, updated_at DESC LIMIT 1", [url.path, portable?.uuid ?? "", portable?.uuid ?? ""])
             .first.flatMap { try? decoder.decode(FileRecord.self, from: Data($0.utf8)) }
         return RoutingPreferences.trustedRecord(portable: portable, local: local)
     }

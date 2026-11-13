@@ -28,11 +28,11 @@ public struct RoutingPreferences {
         sqlite3_busy_timeout(db, 100)
         let decoder = JSONDecoder()
         var statement: OpaquePointer?
-        if sqlite3_prepare_v2(db, "SELECT record FROM files WHERE path = ? OR uuid = ? ORDER BY (path = ?) DESC, updated_at DESC LIMIT 1", -1, &statement, nil) == SQLITE_OK {
+        if sqlite3_prepare_v2(db, "SELECT record FROM files WHERE path = ? OR (uuid = ? AND uuid <> '') ORDER BY (uuid = ? AND uuid <> '') DESC, updated_at DESC LIMIT 1", -1, &statement, nil) == SQLITE_OK {
             let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
             sqlite3_bind_text(statement, 1, url.path, -1, transient)
             sqlite3_bind_text(statement, 2, portable?.uuid ?? "", -1, transient)
-            sqlite3_bind_text(statement, 3, url.path, -1, transient)
+            sqlite3_bind_text(statement, 3, portable?.uuid ?? "", -1, transient)
             if sqlite3_step(statement) == SQLITE_ROW, let bytes = sqlite3_column_text(statement, 0) {
                 let local = try? decoder.decode(FileRecord.self, from: Data(String(cString: bytes).utf8))
                 result.record = trustedRecord(portable: portable, local: local)

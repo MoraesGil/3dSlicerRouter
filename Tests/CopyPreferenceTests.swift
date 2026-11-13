@@ -75,4 +75,33 @@ final class CopyPreferenceTests: XCTestCase {
         }
     }
 
+    func testRenameBackUsesCurrentLocalUUIDInsteadOfStalePath() throws {
+        try fixture { a, b, store in
+            let database = a.deletingLastPathComponent().appendingPathComponent("db")
+            store.save(choice("original", .orcaSlicer), for: a, reason: "test")
+            try FileManager.default.moveItem(at: a, to: b)
+            let inherited = try XCTUnwrap(store.record(for: b))
+            store.save(choice(inherited.uuid, .bambuStudio), for: b, reason: "test")
+            let current = try XCTUnwrap(store.record(for: b))
+            try FileManager.default.moveItem(at: b, to: a)
+            XCTAssertEqual(store.record(for: a)?.app, .bambuStudio)
+            XCTAssertEqual(store.record(for: a)?.uuid, current.uuid)
+            XCTAssertEqual(RoutingPreferences.read(for: a, directory: database).record?.app, .bambuStudio)
+            XCTAssertEqual(RoutingPreferences.read(for: a, directory: database).record?.uuid, current.uuid)
+        }
+    }
+
+    func testUnknownPortableUUIDFallsBackToLocalPath() throws {
+        try fixture { a, _, store in
+            let database = a.deletingLastPathComponent().appendingPathComponent("db")
+            store.save(choice("local", .orcaSlicer), for: a, reason: "test")
+            XCTAssertTrue(choice("foreign", .bambuStudio).write(to: a))
+            XCTAssertEqual(store.record(for: a)?.app, .orcaSlicer)
+            XCTAssertEqual(RoutingPreferences.read(for: a, directory: database).record?.app, .orcaSlicer)
+            FileRecord.remove(from: a)
+            XCTAssertEqual(store.record(for: a)?.app, .orcaSlicer)
+            XCTAssertEqual(RoutingPreferences.read(for: a, directory: database).record?.app, .orcaSlicer)
+        }
+    }
+
 }
