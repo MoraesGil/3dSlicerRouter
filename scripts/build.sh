@@ -93,5 +93,5 @@ SWIFT
   if $BACKGROUND_WAS_ENABLED; then "$DEST/Contents/MacOS/3dSlicerRouter" --background on; fi
   qlmanage -r cache >/dev/null 2>&1 || true
   echo "installed: $DEST"
-  echo "make it the default for .3mf:  $DEST/Contents/MacOS/3dSlicerRouter --set-default"
+  echo "make it the default for .3mf and .gcode:  $DEST/Contents/MacOS/3dSlicerRouter --set-default"
 fi

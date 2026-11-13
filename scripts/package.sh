@@ -17,7 +17,7 @@ Apple silicon + Intel
 INSTALL
 1. Drag 3dSlicerRouter.app onto Applications in this window.
 2. Eject this disk image. Open 3dSlicerRouter from Applications.
-3. Choose “Make default for .3mf”. Keep at least one slicer installed.
+3. Choose “Use for .3mf and .gcode”. Keep at least one slicer installed.
 
 This release is ad-hoc signed, not Developer ID signed or notarized.
 macOS may block the first launch. If you trust this download, follow
@@ -28,7 +28,7 @@ Do not disable Gatekeeper or remove quarantine from the app.
 INSTALAR
 1. Arraste 3dSlicerRouter.app para Applications nesta janela.
 2. Ejete esta imagem de disco. Abra 3dSlicerRouter em Aplicativos.
-3. Escolha “Tornar padrão para .3mf”. Mantenha um fatiador instalado.
+3. Escolha “Usar para .3mf e .gcode”. Mantenha um fatiador instalado.
 
 Esta versão usa assinatura ad-hoc, sem Developer ID nem notarização.
 O macOS pode bloquear a primeira abertura. Se você confia no download,

@@ -14,7 +14,7 @@ O app usa frameworks nativos do macOS. Não exige dependência de package manage
 
 1. **[Baixe 3dSlicerRouter.dmg](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)** na [Release mais recente](https://github.com/MoraesGil/3dSlicerRouter/releases/latest). O mesmo app atende Apple silicon e Intel.
 2. Abra o DMG. Arraste **3dSlicerRouter** para **Applications** nessa janela.
-3. Ejete a imagem de disco. Abra **3dSlicerRouter** em **Aplicativos** e escolha **Tornar padrão para .3mf**.
+3. Ejete a imagem de disco. Abra **3dSlicerRouter** em **Aplicativos** e escolha **Usar para .3mf e .gcode**.
 
 Você não precisa de Xcode, Homebrew, Git nem Terminal. Há também um ZIP: extraia-o e mova o app para Aplicativos. `SHA256SUMS` contém os hashes dos dois downloads.
 
@@ -49,11 +49,19 @@ alias 3dSlicerRouter=/Applications/3dSlicerRouter.app/Contents/MacOS/3dSlicerRou
 
 ## Primeira execução e autorizações
 
-1. Abra **3dSlicerRouter** em Aplicativos. Escolha **Tornar padrão para .3mf**. O Router permanece como padrão; cada arquivo pode abrir em um fatiador diferente.
+1. Abra **3dSlicerRouter** em Aplicativos. Escolha **Usar para .3mf e .gcode**. O Router permanece como padrão; cada arquivo pode abrir em um fatiador diferente.
 2. As thumbnails e o Quick Look usam as duas extensões do app. Se o macOS as desativou, confira **Ajustes do Sistema → Geral → Itens de Início de Sessão e Extensões → Quick Look**. Os nomes podem variar entre versões do macOS.
 3. A preparação de previews em background é opcional. Ative-a com `3dSlicerRouter --background on`. Se houver aprovação pendente, o app abre o painel nativo de Itens de Início para você autorizar.
 
 Abrir um arquivo selecionado e renderizar seu preview não exige Acessibilidade nem Gravação de Tela. O indexador opcional pode provocar pedidos do macOS para pastas protegidas ou volumes removíveis. Registro autorizado e execução correta do worker são estados diferentes. Use `--index-status` e o log local para investigar falhas.
+
+## Ícones dos arquivos no Finder
+
+Os ícones pequenos mantêm a logo do Router. A cor da borda e o marcador indicam o slicer escolhido: Bambu Studio (B), OrcaSlicer (O), Snapmaker Orca (S), PrusaSlicer (P), Cura (C), Creality Print (CR) ou Elegoo (E). Slicers desconhecidos usam o Router neutro (R). As miniaturas grandes e o Quick Look continuam mostrando a peça ou o toolpath.
+
+No G-code, a escolha manual salva tem prioridade. Depois vêm o mapeamento explícito da impressora e o gerador declarado. O padrão de uma marca não substitui um gerador reconhecido. Segure Option ao abrir para escolher novamente.
+
+Os ícones são atualizados ao abrir ou indexar o arquivo, ou ao solicitar uma thumbnail pequena. Para atualizar arquivos existentes sem abrir um slicer, abra o Router, escolha **Atualizar ícones de arquivos…** e selecione os arquivos. Isso altera metadados de ícone do Finder, sem mudar o conteúdo do arquivo. Arquivos somente leitura ou em sistemas sem suporte a esses metadados podem manter um ícone de fallback.
 
 ## Assinatura e downloads
 
@@ -101,7 +109,7 @@ O script de build preserva o estado habilitado do indexador opcional e registra 
 
 ## Desinstalar
 
-Desative o item opcional em background nos Ajustes do Sistema, se estiver ativo. Mova **3dSlicerRouter** de **Aplicativos** para a Lixeira. No Finder, use **Obter Informações → Abrir com → Alterar Tudo…** para associar `.3mf` a outro fatiador instalado. Isso mantém catálogo, cache, logs e escolhas de roteamento nos dados do usuário.
+Desative o item opcional em background nos Ajustes do Sistema, se estiver ativo. Mova **3dSlicerRouter** de **Aplicativos** para a Lixeira. No Finder, use **Obter Informações → Abrir com → Alterar Tudo…** para associar `.3mf` e `.gcode` a outro fatiador instalado. Isso mantém catálogo, cache, logs e escolhas de roteamento nos dados do usuário.
 
 Para uma instalação a partir do código, este script também remove catálogo, cache de previews e logs do app:
 

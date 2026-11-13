@@ -11,13 +11,26 @@ public struct SlicerApp: Codable, Equatable, Hashable {
         self.name = name
     }
 
+    /// PrusaSlicer releases have used both forms of the same bundle identifier.
+    public func matchesBundleID(_ identifier: String) -> Bool {
+        if bundleID == identifier { return true }
+        let prusaIDs: Set<String> = ["com.prusa3d.slic3r", "com.prusa3d.slic3r/"]
+        return prusaIDs.contains(bundleID) && prusaIDs.contains(identifier)
+    }
+
     public static let bambuStudio = SlicerApp(
         bundleID: "com.bambulab.bambu-studio", path: "/Applications/BambuStudio.app", name: "Bambu Studio")
     public static let orcaSlicer = SlicerApp(
         bundleID: "com.orcaslicer.OrcaSlicer", path: "/Applications/OrcaSlicer.app", name: "OrcaSlicer")
     public static let snapmakerOrca = SlicerApp(
         bundleID: "com.snapmaker.snapmaker-orca", path: "/Applications/Snapmaker Orca.app", name: "Snapmaker Orca")
-    public static let known = [orcaSlicer, bambuStudio, snapmakerOrca]
+    public static let prusaSlicer = SlicerApp(
+        bundleID: "com.prusa3d.slic3r/", path: "/Applications/PrusaSlicer.app", name: "PrusaSlicer")
+    public static let cura = SlicerApp(
+        bundleID: "nl.ultimaker.cura", path: "/Applications/UltiMaker Cura.app", name: "UltiMaker Cura")
+    public static let crealityPrint = SlicerApp(
+        bundleID: "com.creality.crealityprint", path: "/Applications/CrealityPrint.app", name: "Creality Print")
+    public static let known = [orcaSlicer, bambuStudio, snapmakerOrca, prusaSlicer, cura, crealityPrint]
 }
 
 /// Decisão gravada no arquivo (xattr) e no índice SQLite.

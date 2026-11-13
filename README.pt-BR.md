@@ -9,8 +9,18 @@
 **Automatize a abertura no slicer correto.**<br>
 **Veja a mesa antes mesmo de abrir o arquivo.**
 
-Um app nativo do macOS para abrir `.3mf` no slicer certo e mostrar thumbnails no Finder e previews
-no Quick Look. Tudo funciona localmente, sem conta nem serviço de rede.
+Um app nativo do macOS para abrir `.3mf` e `.gcode` no slicer certo, com ícones no Finder,
+thumbnails e previews no Quick Look. Tudo funciona localmente, sem conta nem serviço de rede.
+
+<table>
+<tr><td align="center">
+<h2><a href="https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg">↓ Baixar para macOS (.dmg)</a></h2>
+<p><strong>Apple silicon + Intel · macOS 14+</strong><br>
+Abra o DMG e arraste para Applications.<br>
+Sem Xcode, Homebrew ou Terminal.</p>
+<p><a href="https://github.com/MoraesGil/3dSlicerRouter/releases">Todas as versões</a> · <a href="docs/INSTALL.pt-BR.md">Guia de instalação</a></p>
+</td></tr>
+</table>
 
 [![CI](https://github.com/MoraesGil/3dSlicerRouter/actions/workflows/ci.yml/badge.svg)](https://github.com/MoraesGil/3dSlicerRouter/actions/workflows/ci.yml)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
@@ -18,24 +28,27 @@ no Quick Look. Tudo funciona localmente, sem conta nem serviço de rede.
 ![Dependências](https://img.shields.io/badge/depend%C3%AAncias-0-brightgreen)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
 
-**[Baixar para macOS (.dmg)](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)** · [Todas as versões](https://github.com/MoraesGil/3dSlicerRouter/releases)
-
 [Instalar](docs/INSTALL.pt-BR.md) · [Demo do router](#automatize-a-abertura-no-slicer-correto) · [Demo dos previews](#veja-a-mesa-antes-mesmo-de-abrir-o-arquivo) · [English](README.md)
 
 </div>
 
 ## Automatize a abertura no slicer correto
 
-Mantenha o 3dSlicerRouter como app padrão de `.3mf`. Dê dois cliques em um projeto: ele lê a impressora
-salva e abre o **Bambu Studio**, o **OrcaSlicer**, o **Snapmaker Orca** ou o slicer escolhido por você.
-O arquivo não tem impressora definida? Ele pergunta qual dos slicers instalados no Mac você quer usar.
+Mantenha o 3dSlicerRouter como app padrão de `.3mf` e `.gcode`. Dê dois cliques em um arquivo:
+ele lê a impressora salva e abre o **Bambu Studio**, o **OrcaSlicer**, o **Snapmaker Orca** ou o slicer escolhido.
+No G-code, ele também identifica o slicer que gerou o arquivo. A escolha manual por arquivo e o
+mapeamento explícito da impressora têm prioridade sobre esse gerador. Sem uma regra aplicável,
+ele pergunta qual slicer instalado usar.
 
 <img src="docs/images/routing.svg" width="100%" alt="Demo do router: um projeto Bambu Lab A1 abre no Bambu Studio e um projeto Snapmaker U1 abre no OrcaSlicer">
 
 ## Veja a mesa antes mesmo de abrir o arquivo
 
-Encontre o projeto pela geometria e pelas cores, direto no **Finder**. As thumbnails mostram a primeira
-mesa. Selecione um arquivo e pressione **Espaço** para abrir o **Quick Look**: gire e amplie um projeto
+<img src="docs/images/router-file-icons.png" width="100%" alt="Variantes da logo do Router com cores e marcadores de cada slicer">
+
+Os ícones de arquivo no **Finder** usam a logo do Router, com a cor e o marcador do slicer escolhido.
+O macOS também usa esse ícone personalizado na visualização por ícones do Finder. As thumbnails
+do modelo continuam disponíveis para clientes do Quick Look. Selecione um arquivo e pressione **Espaço** para abrir o **Quick Look**: gire e amplie um projeto
 de uma mesa em 3D ou veja todas as mesas juntas em um projeto com várias mesas. Não é preciso abrir o slicer.
 
 | Uma mesa, cores pintadas | Várias mesas, uma visão geral |
@@ -49,7 +62,7 @@ de uma mesa em 3D ou veja todas as mesas juntas em um projeto com várias mesas.
   caminho de extrusão na cor do filamento de cada ferramenta. O Quick Look abre esse caminho em 3D.
 - **Render local:** SceneKit e Metal geram os previews no Mac. Não é preciso modelo de IA, API key ou conta.
 
-O Finder usa a thumbnail indexada da revisão atual quando ela existe. Sem ela, renderiza a geometria
+As solicitações de thumbnail usam a imagem indexada da revisão atual quando ela existe. Sem ela, renderizam a geometria
 atual da primeira mesa sob demanda. Se o render falhar ou o projeto comprimido exceder 250 MB, usa a
 imagem salva pelo slicer, que pode estar desatualizada. A [indexação em background](#previews-em-background-opcional) é opcional.
 
@@ -60,8 +73,9 @@ padrão para essa extensão. Com impressoras de duas marcas, você acaba abrindo
 Bambu Studio (ou um da A1 no Orca) e ganha aviso de preset, filamento faltando ou tipo de mesa trocado
 sem perceber.
 
-O 3dSlicerRouter vira o app padrão de `.3mf` e sai do caminho. Ele lê o `printer_model` do projeto e entrega o arquivo ao fatiador configurado.
-Sem essa informação, pergunta qual fatiador instalado você quer usar.
+O 3dSlicerRouter vira o app padrão de `.3mf` e `.gcode`. Ele lê o `printer_model` e entrega o arquivo
+ao slicer configurado. No G-code, também usa o gerador identificado, depois das escolhas manuais
+e dos mapeamentos explícitos. Sem uma regra aplicável, pergunta qual slicer instalado usar.
 
 ## Qualquer impressora, qualquer fatiador
 
@@ -130,14 +144,17 @@ abrir o Finder:
 
 ## Como decide
 
+A tabela abaixo descreve o roteamento de 3MF. No G-code: escolha confirmada por arquivo → mapeamento explícito → gerador declarado → padrão da impressora ou seletor. Um arquivo copiado de outro Mac não autoriza um novo caminho de aplicativo.
+
 | Situação | Resultado |
 |---|---|
-| Primeira abertura | Regra explícita da impressora; sem regra, Bambu Studio para Bambu Lab e OrcaSlicer oficial para as demais |
+| Primeira abertura de 3MF | Regra explícita da impressora; sem regra, Bambu Studio para Bambu Lab e OrcaSlicer oficial para as demais |
 | Mesmo arquivo, mesma impressora | Onde abriu da última vez, inclusive escolha manual |
 | Impressora mudou dentro da marca (A1 → A1 mini) | Mesmo fatiador, sem perguntar |
 | Impressora mudou para Bambu Lab (U1 → A1) | Bambu Studio, sem perguntar |
 | Impressora mudou para outra marca (A1 → U1) | Pergunta, com o fatiador mapeado em primeiro |
-| Arquivo sem impressora | Escolha manual salva; sem escolha manual, pergunta entre os fatiadores instalados |
+| G-code com gerador identificado | Escolha manual por arquivo e mapeamento explícito têm prioridade; sem eles, usa o gerador |
+| Arquivo sem impressora e sem gerador reconhecido | Escolha manual salva; sem escolha manual, pergunta entre os fatiadores instalados |
 | Fatiador definido foi desinstalado | Pergunta entre os fatiadores ainda instalados |
 | ⌥ segurado ao abrir | Sempre pergunta |
 | Arquivo já aberto num fatiador | Ir para ele, reiniciar e recarregar ou abrir outra cópia |
@@ -161,7 +178,7 @@ Abrir o arquivo diretamente em outro slicer não atualiza a escolha do router.
 
 1. **[Baixe 3dSlicerRouter.dmg](https://github.com/MoraesGil/3dSlicerRouter/releases/latest/download/3dSlicerRouter.dmg)**. O mesmo app atende Apple silicon e Intel, no macOS 14 ou mais novo.
 2. Abra o DMG e arraste **3dSlicerRouter** para **Applications**. Ejete a imagem de disco.
-3. Abra o app em **Aplicativos** e escolha **Tornar padrão para .3mf**. Mantenha um fatiador instalado.
+3. Abra o app em **Aplicativos** e escolha **Usar para .3mf e .gcode**. Mantenha um fatiador instalado.
 
 Você não precisa de Xcode, Homebrew nem Terminal. A Release inclui um ZIP alternativo e hashes SHA-256.
 
@@ -192,7 +209,7 @@ roda a suíte completa com `swiftc` e `xctest`. O SDK e as ferramentas de linha 
 
 ## Teste
 
-Sete projetos sintéticos pequenos em [`samples/`](samples/) cobrem todos os caminhos:
+Sete projetos 3MF sintéticos pequenos em [`samples/`](samples/) demonstram o roteamento e os previews:
 
 ```sh
 open samples/bambu-a1-keychain-tray.3mf        # Bambu Studio
@@ -208,7 +225,7 @@ open samples/no-printer-declared.3mf          # escolher um fatiador instalado
 
 | Comando | O que faz |
 |---|---|
-| `--inspect arq.3mf…` | Impressora, thumbnail, escolha salva e decisão; não abre fatiador nem altera o 3MF |
+| `--inspect arq.3mf\|arq.gcode…` | Impressora, thumbnail, escolha salva e decisão; não abre slicer nem altera o conteúdo |
 | `--map "<impressora>" /Applications/App.app` | Manda essa impressora para qualquer fatiador |
 | `--mappings` | Lista os padrões por marca e os seus mapeamentos |
 | `--list-slicers` | Lista somente os fatiadores instalados e seus caminhos |
@@ -217,18 +234,18 @@ open samples/no-printer-declared.3mf          # escolher um fatiador instalado
 | `--index [--limit N]` | Indexa e renderiza agora, ignorando a regra de ociosidade |
 | `--index-status` | Estado do indexador, totais do catálogo e caminho do log |
 | `--catalog [texto]` | Todos os 3MF e G-code achados, com impressora e estado do preview |
-| `--forget arq.3mf…` | Apaga a memória do router nesses arquivos |
-| `--set-default` | Torna o router o app padrão de `.3mf` |
+| `--forget arq.3mf\|arq.gcode…` | Apaga a memória do router nesses arquivos |
+| `--set-default` | Torna o router o app padrão de `.3mf` e `.gcode` |
 
 ## Arquivos sem impressora
 
-Arquivos sem impressora declarada perguntam qual fatiador usar. O seletor verifica instalações
-em `/Applications`, `~/Applications`, suas subpastas e os registros dos três fatiadores principais
+Arquivos sem impressora declarada e sem gerador de G-code reconhecido perguntam qual slicer usar.
+O seletor verifica instalações em `/Applications`, `~/Applications`, suas subpastas e os registros dos três fatiadores principais
 no macOS. Só entram apps com executável presente, incluindo PrusaSlicer e outros fatiadores
 reconhecidos quando instalados. Apps removidos e links quebrados ficam fora da lista.
 
 Uma escolha manual salva continua válida para aquele arquivo. Decisões automáticas antigas
-que usavam OrcaSlicer por falta de impressora voltam a perguntar. As regras são executadas localmente. O 3dSlicerRouter continua como app padrão da extensão `.3mf`.
+que usavam OrcaSlicer por falta de impressora voltam a perguntar. As regras são executadas localmente. O 3dSlicerRouter continua como app padrão de `.3mf` e `.gcode`.
 
 <p align="center">
 <img src="docs/images/installed-slicers-after.png" width="294" alt="Seletor nativo de um 3MF sintético, com OrcaSlicer, Bambu Studio e Snapmaker Orca instalados no Mac de teste">
@@ -249,8 +266,19 @@ de rede nem configuração de credenciais.
 
 ## Perguntas frequentes
 
-**Ele mexe nos meus arquivos?** Só num atributo estendido com a decisão. O conteúdo do 3MF continua
-idêntico, byte a byte.
+**Ele mexe nos meus arquivos?** Ele grava metadados de roteamento e do ícone do Finder no arquivo.
+O conteúdo do 3MF ou G-code continua idêntico, byte a byte.
+
+**Como escolhe o slicer para G-code?** O Router identifica o gerador nos comentários do arquivo.
+Uma escolha manual salva por arquivo ou um mapeamento explícito da impressora tem prioridade.
+Segure **⌥ (Option)** ao abrir para escolher outro slicer.
+
+**Todos os ícones mudam logo após instalar?** Não. Os ícones pequenos usam a logo do Router com a cor
+e o marcador do slicer. Eles são atualizados ao abrir ou indexar o arquivo e quando o Finder solicita
+uma thumbnail. Arquivos nunca abertos ou indexados podem manter o ícone anterior. A visualização por
+ícones do Finder também mostra a logo personalizada; pressione **Espaço** para conferir o modelo no Quick Look. Se o arquivo não permitir escrita ou o sistema de arquivos
+não aceitar atributos estendidos, a abertura continua funcionando; o Finder usa o ícone da extensão
+ou a thumbnail de fallback.
 
 **O preview atualiza depois que edito o projeto?** Salvar invalida o preview gerado. Na próxima solicitação,
 o Finder renderiza a geometria atual da primeira chapa se não houver imagem indexada pronta; o indexador
