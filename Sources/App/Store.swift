@@ -42,8 +42,8 @@ final class Store {
         guard let db, sqlite3_exec(db, "BEGIN IMMEDIATE", nil, nil, nil) == SQLITE_OK else { return }
         var saved = record
         if let previousPath = query("SELECT path FROM files WHERE uuid = ?", [record.uuid]).first,
-           previousPath != url.path, FileManager.default.fileExists(atPath: previousPath) {
-            // A live original and its copy must not share a mutable database row.
+           previousPath != url.path {
+            // The old path may be offline, so never reuse its identity at a different path.
             saved.uuid = UUID().uuidString
         }
         guard let data = try? coder.encode(saved) else {

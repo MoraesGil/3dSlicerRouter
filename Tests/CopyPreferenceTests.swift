@@ -41,17 +41,38 @@ final class CopyPreferenceTests: XCTestCase {
             }
         }
     }
-    func testRenameRetainsIdentityAndMissingXattrUsesPath() throws {
+    func testRenameRetainsChoiceAndMissingXattrUsesPath() throws {
         try fixture { a, b, store in
             store.save(choice("original", .orcaSlicer), for: a, reason: "test")
             try FileManager.default.moveItem(at: a, to: b)
             let moved = try XCTUnwrap(store.record(for: b))
             XCTAssertEqual(moved.uuid, "original")
             store.save(moved, for: b, reason: "test")
-            XCTAssertEqual(store.record(for: b)?.uuid, "original")
+            let newID = try XCTUnwrap(store.record(for: b)?.uuid)
+            XCTAssertNotEqual(newID, "original")
             FileRecord.remove(from: b)
             XCTAssertEqual(store.record(for: b)?.app, .orcaSlicer)
-            XCTAssertEqual(store.record(for: b)?.uuid, "original")
+            XCTAssertEqual(store.record(for: b)?.uuid, newID)
         }
     }
+    func testUnavailableOriginalKeepsItsChoiceAfterCopyChanges() throws {
+        try fixture { a, b, store in
+            let source = a.deletingLastPathComponent().appendingPathComponent("source")
+            let hidden = a.deletingLastPathComponent().appendingPathComponent("offline")
+            try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+            let original = source.appendingPathComponent("A.gcode")
+            try FileManager.default.moveItem(at: a, to: original)
+            store.save(choice("original", .orcaSlicer), for: original, reason: "test")
+            try FileManager.default.copyItem(at: original, to: b)
+            try FileManager.default.moveItem(at: source, to: hidden)
+            let inherited = try XCTUnwrap(store.record(for: b))
+            XCTAssertEqual(inherited.app, .orcaSlicer)
+            store.save(choice(inherited.uuid, .bambuStudio), for: b, reason: "test")
+            try FileManager.default.moveItem(at: hidden, to: source)
+            XCTAssertEqual(store.record(for: original)?.app, .orcaSlicer)
+            XCTAssertEqual(store.record(for: b)?.app, .bambuStudio)
+            XCTAssertNotEqual(store.record(for: original)?.uuid, store.record(for: b)?.uuid)
+        }
+    }
+
 }
