@@ -44,9 +44,10 @@ choose from the slicers installed on your Mac.
 
 ## See your build plate before opening the file
 
-<img src="docs/images/router-file-icons.png" width="100%" alt="Router logo variants with colours and letter markers for each slicer">
+<img src="docs/images/router-file-icons.png" width="100%" alt="Whole Router logo and outline tinted in each destination slicer’s colour">
 
-**Finder** file icons use the Router logo with the chosen slicer's colour and marker.
+**Finder** file icons tint the entire Router logo in the destination slicer's colour.
+The outline uses the same colour. Files with the same destination use the same colour for `.3mf` and `.gcode`.
 macOS also uses this custom icon in Finder's icon view. Model thumbnails remain available to
 Quick Look clients. Select a file and press **Space** for **Quick Look**: orbit and zoom a single-plate
 project in 3D, or see all plates together in a multi-plate project. You do not need to launch a slicer.
@@ -276,8 +277,9 @@ contents stay byte-for-byte the same.
 A saved manual choice for the file or an explicit printer mapping takes priority.
 Hold **⌥ (Option)** when opening to choose another slicer.
 
-**Do all file icons change immediately after installation?** No. Small icons use the Router logo with
-the slicer's colour and marker. They update when a file is opened or indexed, and when Finder requests
+**Do all file icons change immediately after installation?** No. The entire Router logo and its outline
+use the destination slicer's colour, the same for `.3mf` and `.gcode`. Icons update when a file is
+opened or indexed, and when Finder requests
 a thumbnail. Files never opened or indexed can keep their previous icon. Finder's icon view also
 shows the custom logo; press **Space** to inspect the model in Quick Look. If the file is not writable or its filesystem does not support extended
 attributes, opening still works; Finder uses the extension icon or thumbnail fallback.
