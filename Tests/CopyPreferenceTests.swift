@@ -1,0 +1,57 @@
+import Foundation
+import XCTest
+
+final class CopyPreferenceTests: XCTestCase {
+    private func fixture(_ body: (URL, URL, Store) throws -> Void) throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("copy-choice-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let a = dir.appendingPathComponent("A.gcode"), b = dir.appendingPathComponent("B.gcode")
+        try Data("; synthetic\n".utf8).write(to: a)
+        try body(a, b, Store(directory: dir.appendingPathComponent("db")))
+    }
+    private func choice(_ id: String, _ app: SlicerApp) -> FileRecord {
+        FileRecord(uuid: id, printerModel: nil, app: app, override: true, settingsHash: nil)
+    }
+    func testCopyInheritsThenSaveForksAndKeepsBothChoices() throws {
+        try fixture { a, b, store in
+            store.save(choice("original", .orcaSlicer), for: a, reason: "test")
+            try FileManager.default.copyItem(at: a, to: b)
+            let inherited = try XCTUnwrap(store.record(for: b))
+            XCTAssertEqual(inherited.app, .orcaSlicer)
+            store.save(choice(inherited.uuid, .bambuStudio), for: b, reason: "test")
+            let first = try XCTUnwrap(store.record(for: a)), second = try XCTUnwrap(store.record(for: b))
+            XCTAssertEqual(first.app, .orcaSlicer)
+            XCTAssertEqual(second.app, .bambuStudio)
+            XCTAssertNotEqual(first.uuid, second.uuid)
+            XCTAssertEqual(FileRecord.read(from: b)?.uuid, second.uuid)
+            XCTAssertEqual(RoutingPreferences.read(for: a, directory: a.deletingLastPathComponent().appendingPathComponent("db")).record?.app, .orcaSlicer)
+            XCTAssertEqual(RoutingPreferences.read(for: b, directory: a.deletingLastPathComponent().appendingPathComponent("db")).record?.app, .bambuStudio)
+        }
+    }
+    func testForgetEitherCopyPreservesOther() throws {
+        for forgetFirst in [true, false] {
+            try fixture { a, b, store in
+                store.save(choice("original", .orcaSlicer), for: a, reason: "test")
+                try FileManager.default.copyItem(at: a, to: b)
+                store.save(choice(try XCTUnwrap(store.record(for: b)).uuid, .bambuStudio), for: b, reason: "test")
+                store.forget(forgetFirst ? a : b)
+                XCTAssertNil(store.record(for: forgetFirst ? a : b))
+                XCTAssertEqual(store.record(for: forgetFirst ? b : a)?.app, forgetFirst ? .bambuStudio : .orcaSlicer)
+            }
+        }
+    }
+    func testRenameRetainsIdentityAndMissingXattrUsesPath() throws {
+        try fixture { a, b, store in
+            store.save(choice("original", .orcaSlicer), for: a, reason: "test")
+            try FileManager.default.moveItem(at: a, to: b)
+            let moved = try XCTUnwrap(store.record(for: b))
+            XCTAssertEqual(moved.uuid, "original")
+            store.save(moved, for: b, reason: "test")
+            XCTAssertEqual(store.record(for: b)?.uuid, "original")
+            FileRecord.remove(from: b)
+            XCTAssertEqual(store.record(for: b)?.app, .orcaSlicer)
+            XCTAssertEqual(store.record(for: b)?.uuid, "original")
+        }
+    }
+}

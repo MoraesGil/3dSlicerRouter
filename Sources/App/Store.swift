@@ -14,6 +14,7 @@ final class Store {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let path = directory.appendingPathComponent("router.sqlite").path
         if sqlite3_open(path, &db) != SQLITE_OK { db = nil; return }
+        sqlite3_busy_timeout(db, 1000)
         exec("""
         CREATE TABLE IF NOT EXISTS files(uuid TEXT PRIMARY KEY, path TEXT, record TEXT, updated_at REAL);
         CREATE INDEX IF NOT EXISTS files_path ON files(path);
@@ -37,14 +38,31 @@ final class Store {
     }
 
     func save(_ record: FileRecord, for url: URL, reason: String) {
-        guard let data = try? coder.encode(record) else { return }
-        record.write(to: url)
-        RouterFileIcon.apply(to: url, app: record.app)
+        // Serialize identity assignment with other Router processes using the same database.
+        guard let db, sqlite3_exec(db, "BEGIN IMMEDIATE", nil, nil, nil) == SQLITE_OK else { return }
+        var saved = record
+        if let previousPath = query("SELECT path FROM files WHERE uuid = ?", [record.uuid]).first,
+           previousPath != url.path, FileManager.default.fileExists(atPath: previousPath) {
+            // A live original and its copy must not share a mutable database row.
+            saved.uuid = UUID().uuidString
+        }
+        guard let data = try? coder.encode(saved) else {
+            sqlite3_exec(db, "ROLLBACK", nil, nil, nil)
+            return
+        }
         let json = String(decoding: data, as: UTF8.self)
-        run("INSERT OR REPLACE INTO files(uuid, path, record, updated_at) VALUES(?, ?, ?, ?)",
-            [record.uuid, url.path, json, Date().timeIntervalSince1970])
-        run("INSERT INTO events VALUES(?, ?, ?, ?, ?, ?)",
-            [Date().timeIntervalSince1970, record.uuid, url.path, record.printerModel ?? "", record.app.bundleID, reason])
+        // A new identity for an existing path must not leave a stale competing row.
+        guard run("DELETE FROM files WHERE path = ? AND uuid <> ?", [url.path, saved.uuid]),
+              run("INSERT OR REPLACE INTO files(uuid, path, record, updated_at) VALUES(?, ?, ?, ?)",
+                  [saved.uuid, url.path, json, Date().timeIntervalSince1970]),
+              run("INSERT INTO events VALUES(?, ?, ?, ?, ?, ?)",
+                  [Date().timeIntervalSince1970, saved.uuid, url.path, saved.printerModel ?? "", saved.app.bundleID, reason]),
+              sqlite3_exec(db, "COMMIT", nil, nil, nil) == SQLITE_OK else {
+            sqlite3_exec(db, "ROLLBACK", nil, nil, nil)
+            return
+        }
+        saved.write(to: url)
+        RouterFileIcon.apply(to: url, app: saved.app)
     }
 
     func forget(_ url: URL) {
@@ -131,10 +149,11 @@ final class Store {
         return stmt
     }
 
-    private func run(_ sql: String, _ args: [Any]) {
-        guard let stmt = prepare(sql, args) else { return }
-        sqlite3_step(stmt)
-        sqlite3_finalize(stmt)
+    @discardableResult
+    private func run(_ sql: String, _ args: [Any]) -> Bool {
+        guard let stmt = prepare(sql, args) else { return false }
+        defer { sqlite3_finalize(stmt) }
+        return sqlite3_step(stmt) == SQLITE_DONE
     }
 
     private func query(_ sql: String, _ args: [Any]) -> [String] {
