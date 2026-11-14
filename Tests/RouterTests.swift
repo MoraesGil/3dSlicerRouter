@@ -556,12 +556,12 @@ final class RouterTests: XCTestCase {
                 let values = try url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
                 let cache = url.deletingLastPathComponent().appendingPathComponent("previews")
                 let entry = Indexer.index(url, size: try XCTUnwrap(values.fileSize),
-                                          modified: try XCTUnwrap(values.contentModificationDate), cacheDirectory: cache) { source in
+                                          modified: try XCTUnwrap(values.contentModificationDate), cacheDirectory: cache, readInfo: { source in
                     let oldInfo = try ThreeMF.info(url: source)
                     try Data(contentsOf: replacement).write(to: source, options: .atomic)
                     try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_800_000_000)], ofItemAtPath: source.path)
                     return oldInfo
-                }
+                })
                 XCTAssertEqual(entry.error, "changedDuringRender")
                 XCTAssertFalse(entry.rendered)
                 XCTAssertNil(PreviewCache.cachedURL(for: url, directory: cache))

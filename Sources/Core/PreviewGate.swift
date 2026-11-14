@@ -80,10 +80,10 @@ enum PreviewGate {
                       lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled) else { throw Busy() }
     }
 
-    /// All three executables in one installation can read the host's Info.plist.
-    /// flock uses its inode without changing the file or requiring a writable app group.
+    // One advisory lock per user, shared across installations and Quick Look containers.
+    // Only this empty file needs write access. The kernel releases the lock on exit.
     static func withSlot<T>(at file: URL, _ body: () throws -> T) throws -> T {
-        let fd = open(file.path, O_RDONLY | O_CLOEXEC)
+        let fd = open(file.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, S_IRUSR | S_IWUSR)
         guard fd >= 0 else { throw Busy() }
         defer { close(fd) }
         guard flock(fd, LOCK_EX | LOCK_NB) == 0 else { throw Busy() }
@@ -104,9 +104,9 @@ enum PreviewGate {
     }
 
     static func run<T>(for url: URL, _ body: (_ checkpoint: @escaping () throws -> Void) throws -> T) throws -> T {
-        var host = Bundle.main.executableURL ?? Bundle.main.bundleURL
-        while host.pathExtension != "app" && host.pathComponents.count > 1 { host.deleteLastPathComponent() }
-        return try withSlot(at: host.appendingPathComponent("Contents/Info.plist")) {
+        let support = PreviewCache.directory.deletingLastPathComponent().deletingLastPathComponent()
+        let slot = support.appendingPathComponent("com.moraesdev.3dslicerrouter.render-slot")
+        return try withSlot(at: slot) {
             try check(reserving: try estimatedBytes(for: url))
             var next = ProcessInfo.processInfo.systemUptime + 2
             return try body {
