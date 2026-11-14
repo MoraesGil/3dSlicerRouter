@@ -61,7 +61,7 @@ public enum GCode {
     }
 
     /// Caminho de extrusão em coordenadas da mesa, uma lista de segmentos (pares de pontos) por cor.
-    public static func toolpath(url: URL, info: ThreeMFInfo, maxSegments: Int = 1_500_000) throws -> PrintScene {
+    public static func toolpath(url: URL, info: ThreeMFInfo, maxSegments: Int = 1_500_000, checkpoint: () throws -> Void = {}) throws -> PrintScene {
         let data = try Data(contentsOf: url, options: .alwaysMapped)
         var scene = PrintScene()
         scene.beds = PrintScene.bedLayout(count: 1, min: info.bedMin, max: info.bedMax)
@@ -76,11 +76,16 @@ public enum GCode {
         var segments: [Int: [SIMD3<Float>]] = [:]
         var count = 0
 
-        data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+        try data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
             let bytes = raw.bindMemory(to: UInt8.self)
             var i = 0
             let n = bytes.count
+            var nextCheck = 0
             while i < n {
+                if i >= nextCheck {
+                    try checkpoint()
+                    nextCheck = i + 256 * 1024
+                }
                 var end = i
                 while end < n && bytes[end] != 10 { end += 1 }
                 defer { i = end + 1 }
