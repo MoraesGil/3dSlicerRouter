@@ -30,7 +30,7 @@ public enum PreviewRenderer {
     }
 
     public static func thumbnail(url: URL, info: ThreeMFInfo, size: CGSize,
-                                 cacheDirectory: URL = PreviewCache.directory) throws -> CGImage {
+                                 cacheDirectory: URL = PreviewCache.directory, checkpoint: @escaping () throws -> Void = {}) throws -> CGImage {
         if let cached = PreviewCache.cachedURL(for: url, directory: cacheDirectory)
             .flatMap({ try? Data(contentsOf: $0) }).flatMap(decode) { return cached }
         let zip = try ZipArchive(url: url)
@@ -39,11 +39,15 @@ public enum PreviewRenderer {
             guard bytes <= maxRenderBytes else { throw RenderError.tooLarge }
             // Quick Look can retain this result until the next save. Never seed its cache
             // with an old slicer screenshot when current first-plate geometry can render.
-            return try render(url: url, info: info, size: size, firstPlateOnly: true)
+            return try render(url: url, info: info, size: size, firstPlateOnly: true, checkpoint: checkpoint)
         } catch {
             if let embedded = info.embeddedThumbnail.flatMap({ try? zip.read($0) }).flatMap(decode) { return embedded }
             throw error
         }
+    }
+
+    static func cachedImage(_ url: URL) -> CGImage? {
+        PreviewCache.cachedURL(for: url).flatMap { try? Data(contentsOf: $0) }.flatMap(decode)
     }
 
     static func decode(_ data: Data) -> CGImage? {
@@ -58,15 +62,19 @@ public enum PreviewRenderer {
         return png
     }
 
-    public static func render(url: URL, info: ThreeMFInfo, size: CGSize, firstPlateOnly: Bool = false) throws -> CGImage {
+    public static func render(url: URL, info: ThreeMFInfo, size: CGSize, firstPlateOnly: Bool = false, checkpoint: @escaping () throws -> Void = {}) throws -> CGImage {
         var label = info
         if firstPlateOnly { label.plateCount = 1 }
-        return try render(scene: PrintScene.load(url: url, info: info, firstPlateOnly: firstPlateOnly), info: label, size: size)
+        let scene = try PrintScene.load(url: url, info: info, firstPlateOnly: firstPlateOnly, checkpoint: checkpoint)
+        try checkpoint()
+        return try render(scene: scene, info: label, size: size)
     }
 
     /// Caminho de extrusão de um G-code, no mesmo estilo de mesa.
-    public static func renderGCode(url: URL, info: ThreeMFInfo, size: CGSize) throws -> CGImage {
-        try render(scene: GCode.toolpath(url: url, info: info), info: info, size: size)
+    public static func renderGCode(url: URL, info: ThreeMFInfo, size: CGSize, checkpoint: @escaping () throws -> Void = {}) throws -> CGImage {
+        let scene = try GCode.toolpath(url: url, info: info, checkpoint: checkpoint)
+        try checkpoint()
+        return try render(scene: scene, info: info, size: size)
     }
 
     public static func render(scene: PrintScene, info: ThreeMFInfo, size: CGSize) throws -> CGImage {
@@ -79,8 +87,10 @@ public enum PreviewRenderer {
         return try overlay(shot, size: size, info: info)
     }
 
-    public static func prepare(url: URL, info: ThreeMFInfo, aspect: Float) throws -> Prepared {
-        try prepare(scene: PrintScene.load(url: url, info: info), aspect: aspect)
+    public static func prepare(url: URL, info: ThreeMFInfo, aspect: Float, checkpoint: @escaping () throws -> Void = {}) throws -> Prepared {
+        let scene = try PrintScene.load(url: url, info: info, checkpoint: checkpoint)
+        try checkpoint()
+        return prepare(scene: scene, aspect: aspect)
     }
 
     public static func prepare(scene: PrintScene, aspect: Float) -> Prepared {

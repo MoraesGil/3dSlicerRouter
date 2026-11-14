@@ -11,27 +11,48 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
 
     func preparePreviewOfFile(at url: URL, completionHandler handler: @escaping (Error?) -> Void) {
         let aspect = Float(max(view.bounds.width, 1) / max(view.bounds.height, 1))
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .background).async {
             do {
                 if url.pathExtension.lowercased() == "gcode" {
-                    let info = try GCode.metadata(url: url).info
-                    let prepared = PreviewRenderer.prepare(scene: try GCode.toolpath(url: url, info: info), aspect: aspect)
-                    DispatchQueue.main.async { self.show(prepared, info: info); handler(nil) }
+                    let meta = try GCode.metadata(url: url)
+                    do {
+                        let prepared = try PreviewGate.run(for: url) { check in
+                            let scene = try GCode.toolpath(url: url, info: meta.info, checkpoint: check)
+                            try check()
+                            return PreviewRenderer.prepare(scene: scene, aspect: aspect)
+                        }
+                        DispatchQueue.main.async { self.show(prepared, info: meta.info); handler(nil) }
+                    } catch is PreviewGate.Busy {
+                        try self.showFallback(url, embedded: meta.thumbnail, handler: handler)
+                    }
                     return
                 }
-                let info = try ThreeMF.info(url: url)
-                if info.plateCount > 1 {
-                    // The indexer's cache is intentionally first-plate-only; Space keeps its panorama.
-                    let image = try PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1600, height: 1600))
-                    DispatchQueue.main.async { self.show(image: image); handler(nil) }
-                } else {
-                    let prepared = try PreviewRenderer.prepare(url: url, info: info, aspect: aspect)
-                    DispatchQueue.main.async { self.show(prepared, info: info); handler(nil) }
+                let zip = try ZipArchive(url: url)
+                let info = try ThreeMF.info(zip: zip)
+                do {
+                    try PreviewGate.run(for: url) { check in
+                        if info.plateCount > 1 {
+                            let image = try PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1600, height: 1600), checkpoint: check)
+                            DispatchQueue.main.async { self.show(image: image); handler(nil) }
+                        } else {
+                            let prepared = try PreviewRenderer.prepare(url: url, info: info, aspect: aspect, checkpoint: check)
+                            DispatchQueue.main.async { self.show(prepared, info: info); handler(nil) }
+                        }
+                    }
+                } catch is PreviewGate.Busy {
+                    try self.showFallback(url, embedded: info.embeddedThumbnail.flatMap { try? zip.read($0) }, handler: handler)
                 }
             } catch {
                 DispatchQueue.main.async { handler(error) }
             }
         }
+    }
+
+    private func showFallback(_ url: URL, embedded: @autoclosure () -> Data?, handler: @escaping (Error?) -> Void) throws {
+        guard let image = PreviewRenderer.cachedImage(url) ?? embedded().flatMap(PreviewRenderer.decode) else {
+            throw PreviewGate.Busy()
+        }
+        DispatchQueue.main.async { self.show(image: image); handler(nil) }
     }
 
     private func show(image: CGImage) {

@@ -116,6 +116,8 @@ targets:
         com.apple.security.files.user-selected.read-only: true
         com.apple.security.temporary-exception.files.home-relative-path.read-only:
           - /Library/Application Support/3dSlicerRouter/
+        com.apple.security.temporary-exception.files.home-relative-path.read-write:
+          - /Library/Application Support/com.moraesdev.3dslicerrouter.render-slot
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moraesdev.3dslicerrouter.thumbnail
@@ -147,6 +149,8 @@ targets:
         com.apple.security.files.user-selected.read-only: true
         com.apple.security.temporary-exception.files.home-relative-path.read-only:
           - /Library/Application Support/3dSlicerRouter/
+        com.apple.security.temporary-exception.files.home-relative-path.read-write:
+          - /Library/Application Support/com.moraesdev.3dslicerrouter.render-slot
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.moraesdev.3dslicerrouter.preview

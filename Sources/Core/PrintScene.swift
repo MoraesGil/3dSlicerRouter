@@ -36,7 +36,7 @@ public struct PrintScene {
         }
     }
 
-    public static func load(url: URL, info: ThreeMFInfo, firstPlateOnly: Bool = false) throws -> PrintScene {
+    public static func load(url: URL, info: ThreeMFInfo, firstPlateOnly: Bool = false, checkpoint: @escaping () throws -> Void = {}) throws -> PrintScene {
         let zip = try ZipArchive(url: url)
         var scene = PrintScene()
         scene.beds = bedLayout(count: firstPlateOnly ? 1 : info.plateCount, min: info.bedMin, max: info.bedMax)
@@ -44,15 +44,15 @@ public struct PrintScene {
         let settings = (try? zip.read("Metadata/model_settings.config")).map(ModelSettings.init) ?? ModelSettings()
         if firstPlateOnly, info.plateCount > 1, settings.plates.isEmpty { throw PrintSceneError.missingFirstPlate }
         var models: [String: ModelFile] = [:]
-        func model(_ path: String) -> ModelFile? {
+        func model(_ path: String) throws -> ModelFile? {
             if let m = models[path] { return m }
             guard let data = try? zip.read(path) else { return nil }
-            let m = ModelFile(data: data)
+            let m = try ModelFile(data: data, checkpoint: checkpoint)
             models[path] = m
             return m
         }
         let root = "3D/3dmodel.model"
-        guard let main = model(root) else { throw ZipError.missing(root) }
+        guard let main = try model(root) else { throw ZipError.missing(root) }
 
         func colour(_ extruder: Int) -> String {
             let list = info.filamentColours
@@ -61,13 +61,15 @@ public struct PrintScene {
             return c.count >= 7 ? String(c.prefix(7)).uppercased() : "#B8B4AC"
         }
 
-        func emit(path: String, id: String, transform: simd_float4x4, extruder: Int, top: String, depth: Int) {
-            guard depth < 16, let file = model(path), let object = file.objects[id] else { return }
+        func emit(path: String, id: String, transform: simd_float4x4, extruder: Int, top: String, depth: Int) throws {
+            try checkpoint()
+            guard depth < 16, let file = try model(path), let object = file.objects[id] else { return }
             if let mesh = object.mesh, !mesh.triangles.isEmpty {
                 let key = colour(extruder)
                 var world: [SIMD3<Float>] = []
                 world.reserveCapacity(mesh.vertices.count)
-                for v in mesh.vertices {
+                for (i, v) in mesh.vertices.enumerated() {
+                    if i.isMultiple(of: 8192) { try checkpoint() }
                     let p4 = transform * SIMD4(v, 1)
                     let p = SIMD3(p4.x, p4.y, p4.z)
                     scene.boundsMin = simd_min(scene.boundsMin, p)
@@ -85,6 +87,7 @@ public struct PrintScene {
                     var painted: [String: Buffer] = [:]
                     var next = 0
                     for t in 0..<(mesh.triangles.count / 3) {
+                        if t.isMultiple(of: 4096) { try checkpoint() }
                         let i0 = Int(mesh.triangles[3 * t]), i1 = Int(mesh.triangles[3 * t + 1]), i2 = Int(mesh.triangles[3 * t + 2])
                         guard next < mesh.paintTriangle.count, mesh.paintTriangle[next] == t else {
                             plain += [UInt32(i0) + base, UInt32(i1) + base, UInt32(i2) + base]
@@ -92,11 +95,9 @@ public struct PrintScene {
                         }
                         PaintDecoder.decode(mesh.paintCode[next][...], world[i0], world[i1], world[i2]) { a, b, c, state in
                             let target = state == 0 ? key : colour(state)
-                            var buffer = painted[target, default: Buffer()]
-                            let at = UInt32(buffer.positions.count)
-                            buffer.positions += [a, b, c]
-                            buffer.indices += [at, at + 1, at + 2]
-                            painted[target] = buffer
+                            let at = UInt32(painted[target]?.positions.count ?? 0)
+                            painted[target, default: Buffer()].positions += [a, b, c]
+                            painted[target, default: Buffer()].indices += [at, at + 1, at + 2]
                         }
                         next += 1
                     }
@@ -111,7 +112,7 @@ public struct PrintScene {
             for c in object.components {
                 let part = settings.parts[top]?[c.objectID]
                 if let subtype = part?.subtype, subtype != "normal_part" { continue }
-                emit(path: c.path.map(ModelFile.normalize) ?? path, id: c.objectID,
+                try emit(path: c.path.map(ModelFile.normalize) ?? path, id: c.objectID,
                      transform: transform * c.transform, extruder: part?.extruder ?? extruder,
                      top: top, depth: depth + 1)
             }
@@ -119,7 +120,7 @@ public struct PrintScene {
         for item in main.build {
             if firstPlateOnly, let instances = settings.plates.first,
                !instances.contains(.init(objectID: item.objectID, instanceID: item.instanceID)) { continue }
-            emit(path: root, id: item.objectID, transform: item.transform,
+            try emit(path: root, id: item.objectID, transform: item.transform,
                  extruder: settings.objectExtruder[item.objectID] ?? 1, top: item.objectID, depth: 0)
         }
         return scene
@@ -211,12 +212,17 @@ final class ModelFile: NSObject, XMLParserDelegate {
     private var current: String?
     private var mesh: Mesh?
     private var instanceCounts: [String: Int] = [:]
+    private let checkpoint: () throws -> Void
+    private var elements = 0
+    private var interruption: Error?
 
-    init(data: Data) {
+    init(data: Data, checkpoint: @escaping () throws -> Void) throws {
+        self.checkpoint = checkpoint
         super.init()
         let parser = XMLParser(data: data)
         parser.delegate = self
         parser.parse()
+        if let interruption { throw interruption }
     }
 
     static func normalize(_ path: String) -> String {
@@ -235,14 +241,22 @@ final class ModelFile: NSObject, XMLParserDelegate {
 
     func parser(_ p: XMLParser, didStartElement name: String, namespaceURI: String?,
                 qualifiedName: String?, attributes a: [String: String]) {
+        elements += 1
+        if elements.isMultiple(of: 4096) {
+            do { try checkpoint() } catch {
+                interruption = error
+                p.abortParsing()
+                return
+            }
+        }
         switch name {
         case "vertex":
             mesh?.vertices.append(SIMD3(Float(a["x"] ?? "") ?? 0, Float(a["y"] ?? "") ?? 0, Float(a["z"] ?? "") ?? 0))
         case "triangle":
             if let v1 = a["v1"].flatMap(UInt32.init), let v2 = a["v2"].flatMap(UInt32.init),
                let v3 = a["v3"].flatMap(UInt32.init) {
-                if let paint = a["paint_color"] ?? a["slic3rpe:mmu_segmentation"], !paint.isEmpty, let m = mesh {
-                    mesh?.paintTriangle.append(m.triangles.count / 3)
+                if let paint = a["paint_color"] ?? a["slic3rpe:mmu_segmentation"], !paint.isEmpty, let indexCount = mesh?.triangles.count {
+                    mesh?.paintTriangle.append(indexCount / 3)
                     mesh?.paintCode.append(paint)
                 }
                 mesh?.triangles.append(v1)

@@ -134,6 +134,7 @@ abrir o Finder:
 - Acha todos os `.3mf` e `.gcode` do Mac pelo Spotlight (sem varrer o disco) e mantém um catálogo.
 - Acorda a cada 30 minutos com prioridade de background e **só trabalha na tomada, fora do modo de pouca
   energia, com o Mac frio e você ausente há 3 minutos**. Para assim que você volta.
+- O Quick Look, as miniaturas e o indexador compartilham uma vaga para gerar geometria. A geração exige CPU e GPU abaixo de 30%, pelo menos 25% de memória disponível, temperatura adequada e modo de pouca energia desligado. Se a leitura da GPU estiver indisponível, o Mac também deve estar ocioso há 3 minutos. Sob carga, o Finder usa uma imagem em cache ou embutida quando disponível.
 - Os previews ficam em `~/Library/Application Support/3dSlicerRouter/previews`. Salvar invalida a imagem
   gerada, inclusive com o mesmo tamanho dentro do mesmo segundo. A próxima passada elegível renderiza a
   geometria atual da primeira chapa mesmo com imagem embutida antiga e avisa o Finder. Falhas e caches ausentes são repetidos.
@@ -284,7 +285,7 @@ ou a thumbnail de fallback.
 
 **O preview atualiza depois que edito o projeto?** Salvar invalida o preview gerado. Na próxima solicitação,
 o Finder renderiza a geometria atual da primeira chapa se não houver imagem indexada pronta; o indexador
-opcional a prepara na próxima passada ociosa. Apenas o fallback de erro/projeto grande pode manter um
+opcional a prepara na próxima passada ociosa. O fallback de carga, erro ou projeto grande pode manter um
 screenshot antigo do fatiador. Fechar sem salvar não muda nada.
 
 **Precisa de permissão especial?** Abrir um arquivo e gerar seu preview não exige Acessibilidade,

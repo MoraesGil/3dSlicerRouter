@@ -23,21 +23,11 @@ enum Indexer {
         return type == kIOPMACPowerKey
     }
 
-    /// Segundos desde o último evento de teclado/mouse (IOHIDSystem, sem permissão especial).
-    static var idleSeconds: TimeInterval {
-        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOHIDSystem"))
-        defer { IOObjectRelease(service) }
-        guard service != 0,
-              let value = IORegistryEntryCreateCFProperty(service, "HIDIdleTime" as CFString, kCFAllocatorDefault, 0)?
-                .takeRetainedValue() as? NSNumber else { return 0 }
-        return value.doubleValue / 1_000_000_000
-    }
-
     static func whyNotNow() -> String? {
         if !onACPower { return "na bateria" }
         if ProcessInfo.processInfo.isLowPowerModeEnabled { return "modo de pouca energia" }
         if ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue { return "Mac quente" }
-        let idle = idleSeconds
+        let idle = PreviewGate.idleSeconds()
         if idle < minIdle { return String(format: "em uso (ocioso há %.0fs)", idle) }
         return nil
     }
@@ -71,7 +61,9 @@ enum Indexer {
             write("pulado: \(reason)")
             return summary
         }
+        guard (try? PreviewGate.check()) != nil else { summary.stoppedEarly = true; return summary }
         let start = Date()
+        var nextCheck = ProcessInfo.processInfo.systemUptime + 2
         var files = discover().compactMap { url -> (URL, Int, Date)? in
             guard let v = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
                   let size = v.fileSize, let modified = v.contentModificationDate else { return nil }
@@ -89,6 +81,10 @@ enum Indexer {
                 summary.stoppedEarly = true
                 break
             }
+            if ProcessInfo.processInfo.systemUptime >= nextCheck {
+                guard (try? PreviewGate.check()) != nil else { summary.stoppedEarly = true; break }
+                nextCheck = ProcessInfo.processInfo.systemUptime + 2
+            }
             if store.isCatalogued(url.path, size: size, modified: modified) {
                 refreshIcon(for: url, store: store)
                 summary.skipped += 1
@@ -96,6 +92,10 @@ enum Indexer {
             }
             autoreleasepool {
                 let entry = index(url, size: size, modified: modified)
+                if entry.deferred {
+                    summary.skipped += 1
+                    return // Retry on a later pass without cataloguing partial work.
+                }
                 store.upsertCatalog(entry)
                 if entry.error != nil { summary.failed += 1 } else if entry.rendered { summary.rendered += 1 } else { summary.skipped += 1 }
             }
@@ -107,6 +107,7 @@ enum Indexer {
 
     struct Entry {
         let path: String, kind: String, size: Int, modified: Date
+        var deferred = false
         var printer: String?, plates = 1, embedded = false, preview: String?, rendered = false, error: String?
     }
 
@@ -117,12 +118,13 @@ enum Indexer {
     }
 
     static func index(_ url: URL, size: Int, modified: Date, cacheDirectory: URL = PreviewCache.directory,
+                      admit: (URL, (_ check: @escaping () throws -> Void) throws -> CGImage) throws -> CGImage = PreviewGate.run,
                       readInfo: (URL) throws -> ThreeMFInfo = { try ThreeMF.info(url: $0) }) -> Entry {
         let gcode = url.pathExtension.lowercased() == "gcode"
         var entry = Entry(path: url.path, kind: gcode ? "gcode" : "3mf", size: size, modified: modified)
         do {
             guard let revision = PreviewCache.name(for: url) else { throw IndexError.changedDuringRender }
-            let render: () throws -> CGImage
+            let render: (_ check: @escaping () throws -> Void) throws -> CGImage
             if gcode {
                 let meta = try GCode.metadata(url: url)
                 if let document = try? RoutableDocument.read(url: url) {
@@ -131,7 +133,7 @@ enum Indexer {
                 }
                 entry.printer = meta.info.printerModel
                 entry.embedded = meta.thumbnail != nil
-                render = { try PreviewRenderer.renderGCode(url: url, info: meta.info, size: CGSize(width: 1024, height: 1024)) }
+                render = { checkpoint in try PreviewRenderer.renderGCode(url: url, info: meta.info, size: CGSize(width: 1024, height: 1024), checkpoint: checkpoint) }
             } else {
                 let info = try readInfo(url)
                 let preferences = RoutingPreferences.read(for: url)
@@ -139,13 +141,13 @@ enum Indexer {
                 entry.printer = info.printerModel
                 entry.plates = info.plateCount
                 entry.embedded = info.embeddedThumbnail != nil
-                render = { try PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1024, height: 1024), firstPlateOnly: true) }
+                render = { checkpoint in try PreviewRenderer.render(url: url, info: info, size: CGSize(width: 1024, height: 1024), firstPlateOnly: true, checkpoint: checkpoint) }
             }
             guard revision == PreviewCache.name(for: url) else { throw IndexError.changedDuringRender }
             if let cached = PreviewCache.cachedURL(for: url, directory: cacheDirectory) {
                 entry.preview = cached.path
             } else if size <= maxRenderBytes, !gcode || !entry.embedded {
-                let png = try PreviewRenderer.encode(render())
+                let png = try PreviewRenderer.encode(admit(url, render))
                 guard revision == PreviewCache.name(for: url) else { throw IndexError.changedDuringRender }
                 entry.preview = PreviewCache.store(png, for: url, directory: cacheDirectory, expectedName: revision)?.path
                 entry.rendered = entry.preview != nil
@@ -155,6 +157,8 @@ enum Indexer {
                 NSWorkspace.shared.noteFileSystemChanged(url.path)
             }
             guard revision == PreviewCache.name(for: url) else { throw IndexError.changedDuringRender }
+        } catch is PreviewGate.Busy {
+            entry.deferred = true
         } catch {
             entry.error = "\(error)"
         }

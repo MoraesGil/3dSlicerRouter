@@ -133,6 +133,7 @@ Big projects take seconds to render. Turn on the indexer and they are ready befo
 - It finds every `.3mf` and `.gcode` on the Mac through Spotlight (no disk crawling) and keeps a catalog.
 - It wakes every 30 minutes at background priority and **only works on AC power, outside Low Power
   Mode, while the Mac is cool and you have been away for 3 minutes**. It stops as soon as you are back.
+- Quick Look, thumbnails and the indexer share one heavy render slot. Geometry generation requires CPU and GPU below 30%, at least 25% available memory, normal power mode and acceptable temperature. If GPU usage is unavailable, the Mac must also be idle for 3 minutes. Busy requests use a cached or embedded image when available.
 - Rendering runs in a separate executable, with a 20-minute run limit and conditions checked every
   5 seconds even during a complex preview, so it cannot occupy the Finder handler.
 - Previews go to `~/Library/Application Support/3dSlicerRouter/previews`. Saves invalidate the generated
@@ -286,7 +287,7 @@ attributes, opening still works; Finder uses the extension icon or thumbnail fal
 
 **Does the preview update after I edit the project?** A save invalidates the generated preview. Finder's
 next request renders current first-plate geometry if no indexed image is ready; the optional indexer
-prepares it during its next idle pass. Only the error/large-project fallback can retain an old slicer
+prepares it during its next idle pass. The busy/error/large-project fallback can retain an old slicer
 screenshot. Closing without saving changes nothing.
 
 **Does it need special permissions?** Opening a file and generating its preview do not require

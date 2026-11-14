@@ -10,5 +10,9 @@
 	<array>
 		<string>/Library/Application Support/3dSlicerRouter/</string>
 	</array>
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+	<array>
+		<string>/Library/Application Support/com.moraesdev.3dslicerrouter.render-slot</string>
+	</array>
 </dict>
 </plist>

@@ -524,12 +524,26 @@ final class RouterTests: XCTestCase {
         try withArchive(files: files) { url in
             let values = try url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
             let result = Indexer.index(url, size: try XCTUnwrap(values.fileSize), modified: try XCTUnwrap(values.contentModificationDate),
-                                       cacheDirectory: url.deletingLastPathComponent().appendingPathComponent("previews"))
+                                       cacheDirectory: url.deletingLastPathComponent().appendingPathComponent("previews"),
+                                       admit: { _, render in try render({}) })
             XCTAssertNil(result.error)
             XCTAssertTrue(result.embedded)
             XCTAssertTrue(result.rendered, "The idle pass must regenerate current geometry even if the slicer image is old")
             let png = try Data(contentsOf: URL(fileURLWithPath: XCTUnwrap(result.preview)))
             XCTAssertEqual(PreviewRenderer.decode(png)?.width, 1024)
+        }
+    }
+
+    func testIndexerDefersWithoutCachingPartialGeometry() throws {
+        let files = sceneFiles(build: #"<item objectid="1"/>"#, settings: "<config/>")
+        try withArchive(files: files) { url in
+            let values = try url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+            let cache = url.deletingLastPathComponent().appendingPathComponent("previews")
+            let entry = Indexer.index(url, size: try XCTUnwrap(values.fileSize), modified: try XCTUnwrap(values.contentModificationDate),
+                                      cacheDirectory: cache, admit: { _, _ in throw PreviewGate.Busy() })
+            XCTAssertTrue(entry.deferred)
+            XCTAssertNil(entry.error)
+            XCTAssertNil(PreviewCache.cachedURL(for: url, directory: cache))
         }
     }
 
@@ -542,12 +556,12 @@ final class RouterTests: XCTestCase {
                 let values = try url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
                 let cache = url.deletingLastPathComponent().appendingPathComponent("previews")
                 let entry = Indexer.index(url, size: try XCTUnwrap(values.fileSize),
-                                          modified: try XCTUnwrap(values.contentModificationDate), cacheDirectory: cache) { source in
+                                          modified: try XCTUnwrap(values.contentModificationDate), cacheDirectory: cache, readInfo: { source in
                     let oldInfo = try ThreeMF.info(url: source)
                     try Data(contentsOf: replacement).write(to: source, options: .atomic)
                     try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_800_000_000)], ofItemAtPath: source.path)
                     return oldInfo
-                }
+                })
                 XCTAssertEqual(entry.error, "changedDuringRender")
                 XCTAssertFalse(entry.rendered)
                 XCTAssertNil(PreviewCache.cachedURL(for: url, directory: cache))

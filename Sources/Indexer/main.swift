@@ -11,6 +11,10 @@ let deadline = Date().addingTimeInterval(20 * 60)
 let monitor = DispatchSource.makeTimerSource(queue: .global(qos: .background))
 monitor.schedule(deadline: .now() + 5, repeating: 5)
 monitor.setEventHandler {
+    do { try PreviewGate.check() } catch {
+        Indexer.write("parou: recursos ocupados")
+        exit(0)
+    }
     if let reason = Indexer.whyNotNow() {
         Indexer.write("parou durante preview: \(reason)")
         exit(0)
